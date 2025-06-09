@@ -1,7 +1,7 @@
 import {
     Play, Volume2, Settings, Video, Mic, Folder, Upload, Link, FileAudio, FileVideo,
     Download, FileText, Languages, Zap, Brain, Cloud, ChevronDown, ChevronRight,
-    Settings2, Layers, Target, CheckCircle, Circle, ArrowRight
+    Settings2, Layers, Target, CheckCircle, Circle, ArrowRight, Split
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 
@@ -673,10 +673,18 @@ const TranslationDubber: React.FC<{
                             />
 
                             <StepButton
+                                stepKey="extract-background-audio"
+                                icon={Split}
+                                label="Extract Background Audio"
+                                description="Extract background audio from original video"
+                                canRun={completedSteps.translate}
+                            />
+
+                            <StepButton
                                 stepKey="combine"
                                 icon={Video}
                                 label="Final Assembly"
-                                description="Combine new audio with original video timing"
+                                description="Combine new voice audio + original background audio with original video timing"
                                 canRun={completedSteps.synthesize}
                             />
                         </div>
