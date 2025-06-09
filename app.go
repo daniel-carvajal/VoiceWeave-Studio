@@ -63,15 +63,19 @@ func getPythonCommand() string {
 		}
 		return "python"
 	} else {
-		venvPython3 := filepath.Join("python", ".venv", "bin", "python3")
-		venvPython := filepath.Join("python", ".venv", "bin", "python")
+		// Try multiple possible venv paths
+		venvPaths := []string{
+			filepath.Join("python", ".venv", "bin", "python3"),
+			filepath.Join("python", ".venv", "bin", "python"),
+		}
 		
-		if _, err := os.Stat(venvPython3); err == nil {
-			return venvPython3
+		for _, path := range venvPaths {
+			if _, err := os.Stat(path); err == nil {
+				return path
+			}
 		}
-		if _, err := os.Stat(venvPython); err == nil {
-			return venvPython
-		}
+		
+		// Fallback to system python
 		return "python3"
 	}
 }
@@ -81,19 +85,32 @@ func (a *App) RunDubbingPipeline(config PipelineConfig) (string, error) {
 	// Get the Python scripts directory (either embedded temp or local dev)
 	pythonDir := os.Getenv("KOKORO_PYTHON_DIR")
 	if pythonDir == "" {
-		// Fallback for development
-		pythonDir = filepath.Join(".", "python")
+		// Fallback for development - get absolute path
+		workDir, _ := os.Getwd()
+		pythonDir = filepath.Join(workDir, "python")
 	}
 	
-	scriptPath := filepath.Join(pythonDir, "dub_youtube_video.py")
+	scriptPath := filepath.Join(pythonDir, "dubbing_pipeline.py")
+	
+	// Debug: Print paths
+	fmt.Printf("Working directory: %s\n", pythonDir)
+	fmt.Printf("Script path: %s\n", scriptPath)
 	
 	// Check if Python script exists
 	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("Python script not found: %s", scriptPath)
 	}
 	
-	// Prepare command
+	// Get Python command with absolute path
 	pythonCmd := getPythonCommand()
+	if !filepath.IsAbs(pythonCmd) {
+		workDir, _ := os.Getwd()
+		pythonCmd = filepath.Join(workDir, pythonCmd)
+	}
+	
+	fmt.Printf("Python command: %s\n", pythonCmd)
+	
+	// Prepare command
 	cmd := exec.Command(pythonCmd, scriptPath, config.VideoURL, config.TargetLang)
 	
 	// Set working directory to Python scripts directory
