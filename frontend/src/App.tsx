@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scissors } from 'lucide-react';
+import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scissors, Pencil } from 'lucide-react';
 import KokoroVoiceManager from './routes/KokoroVoiceManager';
 import DubbingPipeline from './routes/DubbingPipeline';
 import AudioSegmentPreviewer from './routes/AudioSegmentPreviewer';
@@ -86,14 +86,14 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                 Segment Playground
                             </Link>
                             <Link
-                                to="/projects"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/projects')
+                                to="/rules"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/rules')
                                     ? 'bg-purple-600 text-white'
                                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                     }`}
                             >
-                                <Folder size={16} />
-                                Projects
+                                <Pencil size={16} />
+                                Rules
                             </Link>
                         </div>
                     </div>
@@ -418,7 +418,7 @@ const App: React.FC = () => {
                             }
                         />
                         <Route
-                            path="/projects"
+                            path="/Rules"
                             element={<ProjectManager />}
                         />
                     </Routes>

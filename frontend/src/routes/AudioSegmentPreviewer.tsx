@@ -343,22 +343,20 @@ const AudioSegmentPreviewer: React.FC = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-6 min-h-screen">
+        <div className="max-w-4xl mx-auto">
             {/* Header */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 mb-8 text-center shadow-xl">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-                    🎵 Audio Segment Previewer
-                </h1>
-                <p className="text-gray-600">Load and preview your dubbed audio segments with enhanced debugging</p>
+            <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-2">🎵 Audio Segment Previewer</h1>
+                <p className="text-purple-200">Load and preview your dubbed audio segments with enhanced debugging</p>
             </div>
 
             {/* Load Segments Section */}
-            <div className="bg-white/90 rounded-2xl p-6 mb-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FileAudio className="text-purple-600" size={20} />
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-purple-500/30 mb-6">
+                <h3 className="text-xl font-semibold text-white mb-6">
                     Load Audio Segments
                 </h3>
-                <div className="flex gap-4 items-center flex-wrap">
+
+                <div className="flex flex-wrap gap-3 items-center mb-4">
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -373,25 +371,27 @@ const AudioSegmentPreviewer: React.FC = () => {
                         <Upload size={18} />
                         Load {"{video_id}_segments.json"}
                     </button>
+
                     <button
                         onClick={loadExampleSegments}
-                        className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all flex items-center gap-2"
+                        className="bg-gray-700 text-gray-300 px-4 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-all"
                     >
-                        🎭 Load Example
+                        🎭 Examples
                     </button>
+
                     {globalStatus.message && (
-                        <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getGlobalStatusStyle()}`}>
+                        <span className={`ml-auto px-4 py-2 rounded-full text-sm font-semibold ${getGlobalStatusStyle()}`}>
                             {globalStatus.message}
                         </span>
                     )}
                 </div>
 
                 {loadedSegments.length > 0 && (
-                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                        <div className="text-green-600 font-semibold mb-2">
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                        <div className="text-green-400 font-semibold mb-2">
                             ✅ Loaded {loadedSegments.length} audio segments
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-300">
                             <strong>Video Duration:</strong> {calculateTotalDuration(loadedSegments).toFixed(1)}s |
                             <strong> Audio Files:</strong> {Object.values(audioStatuses).filter(s => s.status === 'success').length}/{loadedSegments.length} available
                         </p>
@@ -400,44 +400,42 @@ const AudioSegmentPreviewer: React.FC = () => {
             </div>
 
             {/* Segments Timeline */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl min-h-96 max-h-screen overflow-y-auto">
-                <div className="sticky top-0 bg-white/95 pb-4 mb-6 border-b border-gray-200">
-                    <div className="flex justify-between items-center flex-wrap gap-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Volume2 className="text-purple-600" size={20} />
-                            Audio Segments Timeline
-                        </h3>
-                        <div className="flex gap-3 items-center">
-                            <button
-                                onClick={previewAllSegments}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-2"
-                            >
-                                {isPreviewPlaying ? <Pause size={16} /> : <Play size={16} />}
-                                {isPreviewPlaying ? 'Stop Preview' : 'Preview All'}
-                            </button>
-                            <button
-                                onClick={stopPreview}
-                                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all flex items-center gap-2"
-                            >
-                                <Square size={16} />
-                                Stop
-                            </button>
-                            <span className="bg-blue-500/20 text-blue-600 px-3 py-1 rounded-full text-sm font-semibold">
-                                Duration: {calculateTotalDuration(loadedSegments).toFixed(1)}s
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-purple-500/30">
+                <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
+                    <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                        <Volume2 className="text-purple-400" size={20} />
+                        Audio Segments Timeline
+                    </h3>
+                    <div className="flex gap-3 items-center">
+                        <button
+                            onClick={previewAllSegments}
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-2"
+                        >
+                            {isPreviewPlaying ? <Pause size={16} /> : <Play size={16} />}
+                            Preview All
+                        </button>
+                        <button
+                            onClick={stopPreview}
+                            className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all flex items-center gap-2"
+                        >
+                            <Square size={16} />
+                            Stop
+                        </button>
+                        <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm font-semibold">
+                            Duration: {calculateTotalDuration(loadedSegments).toFixed(1)}s
+                        </span>
+                        {isPreviewPlaying && (
+                            <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-semibold">
+                                Segment {currentSegmentIndex + 1}/{loadedSegments.length}
                             </span>
-                            {isPreviewPlaying && (
-                                <span className="bg-green-500/20 text-green-600 px-3 py-1 rounded-full text-sm font-semibold">
-                                    Segment {currentSegmentIndex + 1}/{loadedSegments.length}
-                                </span>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
 
                 {loadedSegments.length === 0 ? (
                     <div className="text-center py-16">
-                        <Volume2 className="mx-auto text-gray-400 mb-4" size={48} />
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">No Audio Segments Loaded</h3>
+                        <Volume2 className="mx-auto text-gray-500 mb-4" size={48} />
+                        <h3 className="text-xl font-semibold text-gray-400 mb-2">No Audio Segments Loaded</h3>
                         <p className="text-gray-500">Load a {"{video_id}_segments.json"} file to preview your dubbed audio segments</p>
                     </div>
                 ) : (
@@ -447,99 +445,86 @@ const AudioSegmentPreviewer: React.FC = () => {
                             const status = audioStatuses[index];
                             const statusBadge = getStatusBadge(status);
                             const isCurrentSegment = isPreviewPlaying && currentSegmentIndex === index;
-                            const isPlaying = currentPreviewAudio && !currentPreviewAudio.paused;
 
                             return (
                                 <div
                                     key={index}
-                                    className={`bg-white rounded-xl p-6 border-l-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${isCurrentSegment ? 'border-l-green-500 bg-green-50 scale-[1.02]' : 'border-l-purple-500'
+                                    className={`bg-gray-700/50 rounded-lg p-6 border-l-4 transition-all hover:bg-gray-700/70 ${isCurrentSegment ? 'border-l-green-500 bg-green-900/20' : 'border-l-purple-500'
                                         }`}
                                 >
-                                    <div className="flex items-start gap-6">
-                                        {/* Timeline Navigation */}
-                                        <div
-                                            className={`flex flex-col items-center min-w-20 cursor-pointer p-4 rounded-lg transition-all ${isCurrentSegment ? 'bg-purple-200 scale-105' : 'bg-gray-100 hover:bg-purple-100'
-                                                }`}
-                                            onClick={() => startPreviewFromSegment(index)}
-                                            title="Start preview from this segment"
-                                        >
-                                            <div className="bg-gray-600 text-white text-sm font-bold px-3 py-1 rounded-full mb-2">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-gray-600 text-white text-sm font-bold px-3 py-1 rounded-full">
                                                 {index + 1}
                                             </div>
                                             <div className="bg-purple-600 text-white text-xs font-semibold px-2 py-1 rounded">
                                                 {segment.start.toFixed(1)}s - {segment.end.toFixed(1)}s
                                             </div>
-                                            <div className="w-16 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                                                    style={{ width: `${Math.min(100, (duration / 5) * 100)}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs text-gray-600 mt-1">{duration.toFixed(1)}s</span>
+                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBadge.className}`}>
+                                                {statusBadge.text}
+                                            </span>
                                         </div>
+                                        {isCurrentSegment && (
+                                            <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-semibold">
+                                                Playing...
+                                            </span>
+                                        )}
+                                    </div>
 
-                                        {/* Main Content */}
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusBadge.className}`}>
-                                                    {statusBadge.text}
-                                                </span>
-                                                {isCurrentSegment && (
-                                                    <span className="bg-green-500/20 text-green-600 px-3 py-1 rounded-full text-sm font-semibold">
-                                                        Playing...
-                                                    </span>
-                                                )}
+                                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                        <div className="bg-gray-600/30 p-4 rounded-lg border-l-3 border-l-gray-500">
+                                            <div className="text-xs font-semibold text-purple-300 uppercase tracking-wide mb-2">
+                                                Original English
                                             </div>
-
-                                            <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                                <div className="bg-gray-50 p-4 rounded-lg border-l-3 border-l-gray-500">
-                                                    <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                                                        Original English
-                                                    </div>
-                                                    <div className="text-gray-800 leading-relaxed">{segment.original_text}</div>
-                                                </div>
-                                                <div className="bg-green-50 p-4 rounded-lg border-l-3 border-l-green-500">
-                                                    <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                                                        Translated Spanish
-                                                    </div>
-                                                    <div className="text-gray-800 leading-relaxed">
-                                                        {segment.translated_text || 'Not translated yet'}
-                                                    </div>
-                                                </div>
+                                            <div className="text-gray-200 leading-relaxed">{segment.original_text}</div>
+                                        </div>
+                                        <div className="bg-green-900/20 p-4 rounded-lg border-l-3 border-l-green-500">
+                                            <div className="text-xs font-semibold text-purple-300 uppercase tracking-wide mb-2">
+                                                Translated Spanish
                                             </div>
-
-                                            {status && status.status !== 'none' && (
-                                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 font-mono text-xs text-yellow-800">
-                                                    <strong>Audio Path:</strong> {segment.audio_file}<br />
-                                                    <strong>Status:</strong> {status.message}
-                                                </div>
-                                            )}
-
-                                            <div className="flex gap-3 items-center pt-4 border-t border-gray-200">
-                                                <button
-                                                    onClick={() => playSegment(index)}
-                                                    disabled={status?.status !== 'success'}
-                                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    <Play size={16} />
-                                                    Play
-                                                </button>
-                                                <button
-                                                    onClick={pauseSegment}
-                                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all flex items-center gap-2"
-                                                >
-                                                    <Pause size={16} />
-                                                    Pause
-                                                </button>
-                                                <button
-                                                    onClick={() => testSegmentAudio(index)}
-                                                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all flex items-center gap-2"
-                                                >
-                                                    <Search size={16} />
-                                                    Test Audio
-                                                </button>
+                                            <div className="text-gray-200 leading-relaxed">
+                                                {segment.translated_text || 'Not translated yet'}
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {status && status.status !== 'none' && (
+                                        <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3 mb-4 font-mono text-xs text-yellow-300">
+                                            <strong>Audio Path:</strong> {segment.audio_file}<br />
+                                            <strong>Status:</strong> {status.message}
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-3 items-center pt-4 border-t border-gray-600">
+                                        <button
+                                            onClick={() => playSegment(index)}
+                                            disabled={status?.status !== 'success'}
+                                            className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <Play size={16} />
+                                            Play
+                                        </button>
+                                        <button
+                                            onClick={pauseSegment}
+                                            className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all flex items-center gap-2"
+                                        >
+                                            <Pause size={16} />
+                                            Pause
+                                        </button>
+                                        <button
+                                            onClick={() => testSegmentAudio(index)}
+                                            className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all flex items-center gap-2"
+                                        >
+                                            <Search size={16} />
+                                            Test Audio
+                                        </button>
+                                        <button
+                                            onClick={() => startPreviewFromSegment(index)}
+                                            className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all"
+                                            title="Start preview from this segment"
+                                        >
+                                            Start Here
+                                        </button>
                                     </div>
                                 </div>
                             );
