@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Play, Volume2, Settings, Video, Mic, Folder } from 'lucide-react';
+import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scissors } from 'lucide-react';
 import KokoroVoiceManager from './routes/KokoroVoiceManager';
 import DubbingPipeline from './routes/DubbingPipeline';
+import AudioSegmentPreviewer from './routes/AudioSegmentPreviewer';
+import ProjectManager from './routes/ProjectManager';
 
 
 // Import Wails runtime functions
@@ -59,21 +61,30 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                     }`}
                             >
-                                <Mic size={16} />
+                                <MicVocal size={16} />
                                 Voice Lab
                             </Link>
 
                             <Link
-                                to="/pipeline"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/pipeline')
+                                to="/dubbing"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/dubbing')
                                     ? 'bg-purple-600 text-white'
                                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                     }`}
                             >
                                 <Video size={16} />
-                                Pipeline
+                                Dubbing
                             </Link>
-
+                            <Link
+                                to="/segments"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/segments')
+                                    ? 'bg-purple-600 text-white'
+                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                    }`}
+                            >
+                                <Scissors size={16} />
+                                Segment Playground
+                            </Link>
                             <Link
                                 to="/projects"
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/projects')
@@ -330,24 +341,24 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
 //     );
 // };
 
-// Simple Projects placeholder
-const ProjectManager: React.FC<any> = () => {
-    return (
-        <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-white mb-2">Project Manager</h1>
-                <p className="text-purple-200">Save and load your dubbing configurations</p>
-            </div>
+// // Simple Projects placeholder
+// const ProjectManager: React.FC<any> = () => {
+//     return (
+//         <div className="max-w-4xl mx-auto">
+//             <div className="text-center mb-8">
+//                 <h1 className="text-4xl font-bold text-white mb-2">Project Manager</h1>
+//                 <p className="text-purple-200">Save and load your dubbing configurations</p>
+//             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-purple-500/30">
-                <div className="text-center py-8">
-                    <Folder size={48} className="mx-auto mb-4 text-gray-500" />
-                    <p className="text-gray-400">Project management coming soon...</p>
-                </div>
-            </div>
-        </div>
-    );
-};
+//             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-purple-500/30">
+//                 <div className="text-center py-8">
+//                     <Folder size={48} className="mx-auto mb-4 text-gray-500" />
+//                     <p className="text-gray-400">Project management coming soon...</p>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
 
 // Main App Component (Simplified)
 const App: React.FC = () => {
@@ -387,12 +398,22 @@ const App: React.FC = () => {
                             }
                         />
                         <Route
-                            path="/pipeline"
+                            path="/dubbing"
                             element={
                                 <DubbingPipeline
                                     onRunPipeline={RunDubbingPipeline}
                                     currentProject={currentProject}
                                     onSaveProject={saveCurrentProject}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/segments"
+                            element={
+                                <AudioSegmentPreviewer
+                                    // onRunPipeline={RunDubbingPipeline}
+                                    // currentProject={currentProject}
+                                    // onSaveProject={saveCurrentProject}
                                 />
                             }
                         />
