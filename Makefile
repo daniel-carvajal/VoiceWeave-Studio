@@ -12,3 +12,9 @@ clean-python:
 	@echo "Cleaning up Python virtual environment..."
 	rm -rf python/.venv
 	@echo "Cleanup complete!"
+
+flatten:
+	repo2txt -o flat.txt \
+	--exclude-dir node_modules build .vscode python \
+	--ignore-files go.sum wails.json README.md pedalboard.ipynb package-lock.json index.72c04241.js vite.config.ts text-rules.json python/dubbing_pipeline_full.py flat.txt \
+	--ignore-types .woff2 .png .css

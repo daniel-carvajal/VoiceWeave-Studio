@@ -1,3 +1,5 @@
+.vscode/
+
 # Build outputs
 build/
 frontend/dist/
@@ -18,3 +20,5 @@ output/
 projects/
 *.mp3
 *.mp4
+
+text-rules.json
