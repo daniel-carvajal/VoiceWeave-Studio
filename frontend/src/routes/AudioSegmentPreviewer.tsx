@@ -26,7 +26,8 @@ const AudioSegmentPreviewer: React.FC = () => {
     const [globalStatus, setGlobalStatus] = useState<{ message: string; type: 'success' | 'warning' | 'error' | 'info' }>({ message: '', type: 'info' });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const previewTimeouts = useRef<NodeJS.Timeout[]>([]);
+    // Use number type for browser timeouts instead of NodeJS.Timeout
+    const previewTimeouts = useRef<number[]>([]);
 
     // Helper function to normalize audio file paths
     const normalizeAudioPath = (audioFile: string): string[] => {
@@ -94,6 +95,12 @@ const AudioSegmentPreviewer: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
+                // Add null check for e.target
+                if (!e.target?.result) {
+                    setGlobalStatus({ message: 'Error: Could not read file', type: 'error' });
+                    return;
+                }
+
                 const data = JSON.parse(e.target.result as string) as AudioSegment[];
                 setLoadedSegments(data);
                 setGlobalStatus({ message: `Loaded ${data.length} segments`, type: 'success' });
@@ -280,19 +287,19 @@ const AudioSegmentPreviewer: React.FC = () => {
 
                 audio.onended = () => {
                     if (isPreviewPlaying) {
-                        const timeout = setTimeout(() => playNextSegment(index + 1), 300);
+                        const timeout = window.setTimeout(() => playNextSegment(index + 1), 300);
                         previewTimeouts.current.push(timeout);
                     }
                 };
             } catch {
                 if (isPreviewPlaying) {
-                    const timeout = setTimeout(() => playNextSegment(index + 1), 100);
+                    const timeout = window.setTimeout(() => playNextSegment(index + 1), 100);
                     previewTimeouts.current.push(timeout);
                 }
             }
         } else {
             if (isPreviewPlaying) {
-                const timeout = setTimeout(() => playNextSegment(index + 1), 100);
+                const timeout = window.setTimeout(() => playNextSegment(index + 1), 100);
                 previewTimeouts.current.push(timeout);
             }
         }

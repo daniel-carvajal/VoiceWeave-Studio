@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 
-interface PipelineConfig {
+// Define and export the extended PipelineConfig that includes all your custom fields
+export interface ExtendedPipelineConfig {
     inputType: 'url' | 'video' | 'audio';
     videoUrl?: string;
     videoFile?: File;
@@ -37,8 +38,8 @@ interface PipelineConfig {
     };
 }
 
-const TranslationDubber: React.FC<{
-    onRunPipeline: (config: PipelineConfig) => Promise<string>;
+const DubbingPipeline: React.FC<{
+    onRunPipeline: (config: ExtendedPipelineConfig) => Promise<string>;
     onRunStep: (step: string, config: any) => Promise<any>;
     currentProject: any;
     onSaveProject: (name: string, config: any) => Promise<void>;
@@ -154,7 +155,7 @@ const TranslationDubber: React.FC<{
         setProgress('Starting full dubbing pipeline...');
 
         try {
-            const config: PipelineConfig = {
+            const config: ExtendedPipelineConfig = {
                 inputType,
                 videoUrl: inputType === 'url' ? videoUrl : undefined,
                 videoFile: inputType === 'video' ? videoFile || undefined : undefined,
@@ -255,10 +256,10 @@ const TranslationDubber: React.FC<{
                         onClick={() => runStep(stepKey)}
                         disabled={isDisabled}
                         className={`px-3 py-1 rounded text-sm transition-all ${isDisabled
-                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                : isCompleted
-                                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                                    : 'bg-purple-600 hover:bg-purple-700 text-white'
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : isCompleted
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-purple-600 hover:bg-purple-700 text-white'
                             }`}
                     >
                         {isCompleted ? 'Re-run' : 'Run'}
@@ -282,8 +283,8 @@ const TranslationDubber: React.FC<{
                     <button
                         onClick={() => setMode('full')}
                         className={`flex-1 py-2 px-4 rounded transition-all ${mode === 'full'
-                                ? 'bg-purple-600 text-white'
-                                : 'text-gray-300 hover:text-white'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-300 hover:text-white'
                             }`}
                     >
                         <Zap className="inline mr-2" size={16} />
@@ -292,8 +293,8 @@ const TranslationDubber: React.FC<{
                     <button
                         onClick={() => setMode('stepwise')}
                         className={`flex-1 py-2 px-4 rounded transition-all ${mode === 'stepwise'
-                                ? 'bg-purple-600 text-white'
-                                : 'text-gray-300 hover:text-white'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-300 hover:text-white'
                             }`}
                     >
                         <Layers className="inline mr-2" size={16} />
@@ -523,8 +524,8 @@ const TranslationDubber: React.FC<{
                                                     mode: 'simple'
                                                 }))}
                                                 className={`px-3 py-2 rounded text-sm transition-all ${translationSettings.mode === 'simple'
-                                                        ? 'bg-purple-600 text-white'
-                                                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                                                    ? 'bg-purple-600 text-white'
+                                                    : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                                                     }`}
                                             >
                                                 <Target size={16} className="inline mr-1" />
@@ -536,8 +537,8 @@ const TranslationDubber: React.FC<{
                                                     mode: 'advanced'
                                                 }))}
                                                 className={`px-3 py-2 rounded text-sm transition-all ${translationSettings.mode === 'advanced'
-                                                        ? 'bg-purple-600 text-white'
-                                                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                                                    ? 'bg-purple-600 text-white'
+                                                    : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                                                     }`}
                                             >
                                                 <Brain size={16} className="inline mr-1" />
@@ -806,7 +807,7 @@ const TranslationDubber: React.FC<{
                     )}
 
                     {/* Cloud Service Warnings */}
-                    {translationSettings.simpleModel.includes('google') || translationSettings.simpleModel.includes('deepl') && (
+                    {(translationSettings.simpleModel.includes('google') || translationSettings.simpleModel.includes('deepl')) && (
                         <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4">
                             <h3 className="text-orange-300 font-medium mb-2 flex items-center gap-2">
                                 <Cloud size={18} />
@@ -824,4 +825,4 @@ const TranslationDubber: React.FC<{
     );
 };
 
-export default TranslationDubber;
+export default DubbingPipeline;
