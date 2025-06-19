@@ -42,8 +42,8 @@ const DubbingPipeline: React.FC<{
     onRunPipeline: (config: ExtendedPipelineConfig) => Promise<string>;
     onRunStep: (step: string, config: any) => Promise<any>;
     currentProject: any;
-    onSaveProject: (name: string, config: any) => Promise<void>;
-}> = ({ onRunPipeline, onRunStep, currentProject, onSaveProject }) => {
+    // onSaveProject: (name: string, config: any) => Promise<void>;
+}> = ({ onRunPipeline, onRunStep, currentProject }) => {
     const [mode, setMode] = useState<'full' | 'stepwise'>('full');
     const [inputType, setInputType] = useState<'url' | 'video' | 'audio'>('url');
     const [videoUrl, setVideoUrl] = useState('');

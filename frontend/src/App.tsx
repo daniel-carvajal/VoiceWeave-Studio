@@ -4,16 +4,15 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scissors, Pencil } from 'lucide-react';
 import KokoroVoiceManager from './routes/KokoroVoiceManager';
 import DubbingPipeline from './routes/DubbingPipeline';
-import AudioSegmentPreviewer from './routes/AudioSegmentPreviewer';
-import TextRulesManager from './routes/TextRulesManager';
+// import AudioSegmentPreviewer from './routes/AudioSegmentPreviewer';
+// import TextRulesManager from './routes/TextRulesManager';
+import WelcomeScreen from './components/WelcomeScreen';
+
+import { useProject } from './hooks/useProject';
 
 // Import Wails runtime functions
 import {
     RunDubbingPipeline,
-    SynthesizeVoice,
-    SaveProject,
-    LoadProject,
-    GetProjectFiles
 } from '../wailsjs/go/main/App';
 
 // Import the correct PipelineConfig type from wails models
@@ -34,7 +33,6 @@ const runPipelineStep = async (step: string, config: any): Promise<any> => {
 // Navigation Component
 const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
     const location = useLocation();
-
     const isActive = (path: string) => location.pathname === path;
 
     return (
@@ -45,55 +43,73 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                         <h1 className="text-xl font-bold text-white">Kokoro Studio</h1>
 
                         <div className="flex space-x-1">
-                            <Link
-                                to="/"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/')
-                                    ? 'bg-purple-600 text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <MicVocal size={16} />
-                                Voice Lab
-                            </Link>
-
-                            <Link
-                                to="/dubbing"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/dubbing')
-                                    ? 'bg-purple-600 text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <Video size={16} />
-                                Dubbing
-                            </Link>
-                            <Link
-                                to="/segments"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/segments')
-                                    ? 'bg-purple-600 text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <Scissors size={16} />
-                                Segment Playground
-                            </Link>
-                            <Link
-                                to="/text-rules"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/text-rules')
-                                    ? 'bg-purple-600 text-white'
-                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <Pencil size={16} />
-                                Rules
-                            </Link>
+                            {currentProject ? (
+                                // Project is active - show project-specific tabs
+                                <>
+                                    <Link
+                                        to="/"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white"
+                                    >
+                                        <Video size={16} />
+                                        Pipeline
+                                    </Link>
+                                    <Link
+                                        to="/voice"
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/voice')
+                                                ? 'bg-purple-600 text-white'
+                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            }`}
+                                    >
+                                        <MicVocal size={16} />
+                                        Voice Lab
+                                    </Link>
+                                </>
+                            ) : (
+                                // No project - show welcome/voice lab
+                                <>
+                                    <Link
+                                        to="/"
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/')
+                                                ? 'bg-purple-600 text-white'
+                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            }`}
+                                    >
+                                        <Folder size={16} />
+                                        Studio
+                                    </Link>
+                                    <Link
+                                        to="/voice"
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/voice')
+                                                ? 'bg-purple-600 text-white'
+                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            }`}
+                                    >
+                                        <MicVocal size={16} />
+                                        Voice Lab
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    {currentProject && (
-                        <div className="text-sm text-gray-300">
-                            Project: <span className="text-purple-300">{currentProject.name}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-4">
+                        {currentProject && (
+                            <>
+                                <div className="text-sm text-gray-300">
+                                    Project: <span className="text-purple-300">{currentProject.name}</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        // Add function to close project and return to welcome
+                                        window.location.href = '/';
+                                    }}
+                                    className="text-gray-400 hover:text-white text-sm"
+                                >
+                                    Close Project
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </nav>
@@ -102,25 +118,7 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
 
 // Main App Component
 const App: React.FC = () => {
-    const [currentProject, setCurrentProject] = useState<any>(null);
-
-    const saveCurrentProject = async (name: string, config: any) => {
-        try {
-            await SaveProject(name, config);
-            setCurrentProject({ name, config });
-        } catch (error) {
-            console.error('Failed to save project:', error);
-        }
-    };
-
-    const loadProject = async (name: string) => {
-        try {
-            const config = await LoadProject(name);
-            setCurrentProject({ name, config });
-        } catch (error) {
-            console.error('Failed to load project:', error);
-        }
-    };
+    const { currentProject } = useProject();
 
     // Wrapper function to handle the pipeline config conversion
     const handleRunPipeline = async (config: ExtendedPipelineConfig): Promise<string> => {
@@ -143,31 +141,20 @@ const App: React.FC = () => {
                 <Navigation currentProject={currentProject} />
 
                 <main className="container mx-auto px-6 pt-20 pb-16">
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={<KokoroVoiceManager />}
+                    {currentProject ? (
+                        // Show pipeline when project is active
+                        <DubbingPipeline
+                            onRunPipeline={handleRunPipeline}
+                            onRunStep={runPipelineStep}
+                            currentProject={currentProject}
                         />
-                        <Route
-                            path="/dubbing"
-                            element={
-                                <DubbingPipeline
-                                    onRunPipeline={handleRunPipeline}
-                                    onRunStep={runPipelineStep}
-                                    currentProject={currentProject}
-                                    onSaveProject={saveCurrentProject}
-                                />
-                            }
-                        />
-                        <Route
-                            path="/segments"
-                            element={<AudioSegmentPreviewer />}
-                        />
-                        <Route
-                            path="/text-rules"
-                            element={<TextRulesManager />}
-                        />
-                    </Routes>
+                    ) : (
+                        // Show welcome/voice lab when no project
+                        <Routes>
+                            <Route path="/" element={<WelcomeScreen />} />
+                            <Route path="/voice" element={<KokoroVoiceManager />} />
+                        </Routes>
+                    )}
                 </main>
             </div>
         </Router>
