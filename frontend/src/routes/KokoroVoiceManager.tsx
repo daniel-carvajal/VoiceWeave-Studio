@@ -48,7 +48,7 @@ const KokoroVoiceManager: React.FC = () => {
     const [selectedVoices, setSelectedVoices] = useState<Voice[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [speed, setSpeed] = useState<number>(1.0);
-    const [langCode, setLangCode] = useState<string>('e');
+    const [langCode, setLangCode] = useState<string>('a'); // Fixed: American English is 'a', not 'e'
     const [responseFormat, setResponseFormat] = useState<string>('mp3');
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -58,8 +58,36 @@ const KokoroVoiceManager: React.FC = () => {
     const [currentAudio, setCurrentAudio] = useState<string | null>(null);
     const [playbackTime, setPlaybackTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
+    const [activeLanguageSection, setActiveLanguageSection] = useState<string>('American English');
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const voiceListRef = useRef<HTMLDivElement | null>(null);
+
+    // Language code mappings based on the documentation
+    const languageOptions = [
+        { code: 'a', name: 'American English', flag: '🇺🇸' },
+        { code: 'b', name: 'British English', flag: '🇬🇧' },
+        { code: 'j', name: 'Japanese', flag: '🇯🇵' },
+        { code: 'z', name: 'Mandarin Chinese', flag: '🇨🇳' },
+        { code: 'e', name: 'Spanish', flag: '🇪🇸' },
+        { code: 'f', name: 'French', flag: '🇫🇷' },
+        { code: 'h', name: 'Hindi', flag: '🇮🇳' },
+        { code: 'i', name: 'Italian', flag: '🇮🇹' },
+        { code: 'p', name: 'Brazilian Portuguese', flag: '🇧🇷' }
+    ];
+
+    // Language sections for navigation
+    const languageSections = [
+        'American English',
+        'British English',
+        'Japanese',
+        'Chinese',
+        'Spanish',
+        'French',
+        'Hindi',
+        'Italian',
+        'Portuguese'
+    ];
 
     const voiceCategories: Record<string, string[]> = {
         '🇺🇸 American English (Female)': voices.filter(v => v.startsWith('af_')),
@@ -246,6 +274,52 @@ const KokoroVoiceManager: React.FC = () => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
+    // Get current language info for display
+    const getCurrentLanguage = () => {
+        return languageOptions.find(lang => lang.code === langCode) || languageOptions[0];
+    };
+
+    // Scroll to specific language section
+    const scrollToLanguageSection = (language: string): void => {
+        if (!voiceListRef.current) return;
+
+        const sectionElement = voiceListRef.current.querySelector(`[data-language="${language}"]`);
+        if (sectionElement) {
+            sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    // Handle scroll to update active language section
+    const handleVoiceListScroll = (): void => {
+        if (!voiceListRef.current) return;
+
+        const container = voiceListRef.current;
+        const sections = container.querySelectorAll('[data-language]');
+        const containerTop = container.scrollTop;
+        const containerHeight = container.clientHeight;
+
+        let closestSection = '';
+        let closestDistance = Infinity;
+
+        sections.forEach((section) => {
+            const element = section as HTMLElement;
+            const sectionTop = element.offsetTop - container.offsetTop;
+            const sectionHeight = element.offsetHeight;
+            const sectionCenter = sectionTop + sectionHeight / 2;
+            const containerCenter = containerTop + containerHeight / 2;
+            const distance = Math.abs(sectionCenter - containerCenter);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestSection = element.getAttribute('data-language') || '';
+            }
+        });
+
+        if (closestSection && closestSection !== activeLanguageSection) {
+            setActiveLanguageSection(closestSection);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6">
             <div className="max-w-7xl mx-auto">
@@ -270,7 +344,27 @@ const KokoroVoiceManager: React.FC = () => {
                             className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none mb-4"
                         />
 
-                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {/* Language Navigation Pills */}
+                        <div className="flex flex-wrap gap-2 mb-4 pb-3 border-b border-gray-600">
+                            {languageSections.map(language => (
+                                <button
+                                    key={language}
+                                    onClick={() => scrollToLanguageSection(language)}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${activeLanguageSection === language
+                                        ? 'bg-purple-600 text-white shadow-sm'
+                                        : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/70 hover:text-white'
+                                        }`}
+                                >
+                                    {language}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div
+                            ref={voiceListRef}
+                            className="space-y-3 max-h-96 overflow-y-auto"
+                            onScroll={handleVoiceListScroll}
+                        >
                             {Object.entries(voiceCategories).map(([category, categoryVoices]) => {
                                 const visibleVoices = categoryVoices.filter(voice =>
                                     voice.toLowerCase().includes(searchTerm.toLowerCase())
@@ -278,8 +372,19 @@ const KokoroVoiceManager: React.FC = () => {
 
                                 if (visibleVoices.length === 0) return null;
 
+                                // Extract language name for data attribute
+                                const languageName = category.includes('American English') ? 'American English' :
+                                    category.includes('British English') ? 'British English' :
+                                        category.includes('Japanese') ? 'Japanese' :
+                                            category.includes('Chinese') ? 'Chinese' :
+                                                category.includes('Spanish') ? 'Spanish' :
+                                                    category.includes('French') ? 'French' :
+                                                        category.includes('Hindi') ? 'Hindi' :
+                                                            category.includes('Italian') ? 'Italian' :
+                                                                category.includes('Portuguese') ? 'Portuguese' : '';
+
                                 return (
-                                    <div key={category}>
+                                    <div key={category} data-language={languageName}>
                                         <h3 className="text-sm font-medium text-purple-300 mb-2">{category}</h3>
                                         <div className="space-y-1 mb-4">
                                             {visibleVoices.map(voice => (
@@ -375,17 +480,17 @@ const KokoroVoiceManager: React.FC = () => {
                                 <select
                                     value={langCode}
                                     onChange={(e) => setLangCode(e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600"
+                                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none"
                                 >
-                                    <option value="e">English</option>
-                                    <option value="j">Japanese</option>
-                                    <option value="z">Chinese</option>
-                                    <option value="s">Spanish</option>
-                                    <option value="f">French</option>
-                                    <option value="h">Hindi</option>
-                                    <option value="i">Italian</option>
-                                    <option value="p">Portuguese</option>
+                                    {languageOptions.map(lang => (
+                                        <option key={lang.code} value={lang.code}>
+                                            {lang.flag} {lang.name}
+                                        </option>
+                                    ))}
                                 </select>
+                                <div className="text-center text-xs text-gray-400 mt-1">
+                                    Code: {langCode} | {getCurrentLanguage().name}
+                                </div>
                             </div>
                         </div>
 
@@ -466,7 +571,7 @@ const KokoroVoiceManager: React.FC = () => {
                                         </button>
                                     </div>
                                     <div className="text-xs text-gray-400 mb-2">
-                                        {preset.voices.length} voices • Speed: {preset.speed}x
+                                        {preset.voices.length} voices • Speed: {preset.speed}x • Lang: {preset.langCode}
                                     </div>
                                     <div className="text-xs text-gray-500 font-mono mb-3 break-all">
                                         {preset.voiceString}
