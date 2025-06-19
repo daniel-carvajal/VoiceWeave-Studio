@@ -5,7 +5,7 @@ import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scisso
 import KokoroVoiceManager from './routes/KokoroVoiceManager';
 import DubbingPipeline from './routes/DubbingPipeline';
 import AudioSegmentPreviewer from './routes/AudioSegmentPreviewer';
-import ProjectManager from './routes/ProjectManager';
+import TextRulesManager from './routes/TextRulesManager';
 
 // Import Wails runtime functions
 import {
@@ -77,8 +77,8 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                 Segment Playground
                             </Link>
                             <Link
-                                to="/rules"
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/rules')
+                                to="/text-rules"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/text-rules')
                                     ? 'bg-purple-600 text-white'
                                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                     }`}
@@ -164,8 +164,8 @@ const App: React.FC = () => {
                             element={<AudioSegmentPreviewer />}
                         />
                         <Route
-                            path="/rules"
-                            element={<ProjectManager />}
+                            path="/text-rules"
+                            element={<TextRulesManager />}
                         />
                     </Routes>
                 </main>
