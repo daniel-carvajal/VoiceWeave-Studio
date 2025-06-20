@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Play, Volume2, Settings, Video, MicVocal, Folder, AudioWaveform, Scissors, Pencil } from 'lucide-react';
@@ -56,8 +56,8 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                     <Link
                                         to="/voice"
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/voice')
-                                                ? 'bg-purple-600 text-white'
-                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                             }`}
                                     >
                                         <MicVocal size={16} />
@@ -70,8 +70,8 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                     <Link
                                         to="/"
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/')
-                                                ? 'bg-purple-600 text-white'
-                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                             }`}
                                     >
                                         <Folder size={16} />
@@ -80,8 +80,8 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
                                     <Link
                                         to="/voice"
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isActive('/voice')
-                                                ? 'bg-purple-600 text-white'
-                                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                                             }`}
                                     >
                                         <MicVocal size={16} />
@@ -119,6 +119,8 @@ const Navigation: React.FC<{ currentProject: any }> = ({ currentProject }) => {
 // Main App Component
 const App: React.FC = () => {
     const { currentProject } = useProject();
+
+    console.log('App render - currentProject:', currentProject ? currentProject.name : 'null');
 
     // Wrapper function to handle the pipeline config conversion
     const handleRunPipeline = async (config: ExtendedPipelineConfig): Promise<string> => {

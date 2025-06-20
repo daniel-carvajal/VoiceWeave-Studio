@@ -332,7 +332,16 @@ const WelcomeScreen: React.FC = () => {
                                     <div className="flex items-center justify-between">
                                         <div
                                             className="flex-1 cursor-pointer"
-                                            onClick={() => loadProject(project.id)}
+                                            onClick={async () => {
+                                                console.log('Project clicked:', project.id);
+                                                try {
+                                                    console.log('About to call loadProject...');
+                                                    await loadProject(project.id);
+                                                    console.log('loadProject completed successfully');
+                                                } catch (err) {
+                                                    console.error('Failed to load project:', err);
+                                                }
+                                            }}
                                         >
                                             <div className="flex items-center gap-3 mb-2">
                                                 {getSourceIcon(project.sourceType)}

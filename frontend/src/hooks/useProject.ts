@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { main } from '../../wailsjs/go/models';
 import {
     CreateProject,
@@ -15,30 +15,105 @@ import {
 // Use the Wails-generated types
 type ProjectConfig = main.ProjectConfig;
 
+// Create a robust external store for project state
+class ProjectStore {
+    private state = {
+        currentProject: null as ProjectConfig | null,
+        recentProjects: [] as ProjectConfig[],
+        isLoading: false,
+        error: null as string | null
+    };
+
+    private listeners = new Set<() => void>();
+
+    // Required for useSyncExternalStore
+    getSnapshot = () => {
+        console.log('ProjectStore.getSnapshot called:', this.state.currentProject ? this.state.currentProject.name : 'null');
+        return this.state;
+    };
+
+    // Required for useSyncExternalStore
+    subscribe = (callback: () => void) => {
+        console.log('ProjectStore.subscribe called, listeners:', this.listeners.size);
+        this.listeners.add(callback);
+        return () => {
+            console.log('ProjectStore.unsubscribe called');
+            this.listeners.delete(callback);
+        };
+    };
+
+    // Update state and notify all subscribers
+    setState = (updates: Partial<typeof this.state>) => {
+        const oldProject = this.state.currentProject;
+        this.state = { ...this.state, ...updates };
+        const newProject = this.state.currentProject;
+
+        console.log('ProjectStore.setState called:', {
+            oldProject: oldProject ? oldProject.name : 'null',
+            newProject: newProject ? newProject.name : 'null',
+            listenersCount: this.listeners.size
+        });
+
+        // Notify all subscribers
+        this.listeners.forEach(listener => {
+            console.log('Calling listener...');
+            listener();
+        });
+    };
+
+    // Convenience methods
+    setCurrentProject = (project: ProjectConfig | null) => {
+        this.setState({ currentProject: project });
+    };
+
+    setRecentProjects = (projects: ProjectConfig[]) => {
+        this.setState({ recentProjects: projects });
+    };
+
+    setLoading = (loading: boolean) => {
+        this.setState({ isLoading: loading });
+    };
+
+    setError = (error: string | null) => {
+        this.setState({ error });
+    };
+
+    clearError = () => {
+        this.setState({ error: null });
+    };
+
+    closeProject = () => {
+        this.setState({ currentProject: null });
+    };
+}
+
+// Create a single instance of the store
+const projectStore = new ProjectStore();
+
 export const useProject = () => {
-    const [currentProject, setCurrentProject] = useState<ProjectConfig | null>(null);
-    const [recentProjects, setRecentProjects] = useState<ProjectConfig[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // Use useSyncExternalStore for guaranteed re-renders
+    const state = useSyncExternalStore(
+        projectStore.subscribe,
+        projectStore.getSnapshot,
+        projectStore.getSnapshot // Server snapshot (same as client)
+    );
+
+    console.log('useProject hook called, current state:', state.currentProject ? state.currentProject.name : 'null');
 
     // Load recent projects on hook initialization
     useEffect(() => {
         loadRecentProjects();
     }, []);
 
-    const closeProject = useCallback(() => {
-        setCurrentProject(null);
-    }, []);
-
     const loadRecentProjects = useCallback(async () => {
         try {
-            setIsLoading(true);
+            projectStore.setLoading(true);
             const projects = await GetRecentProjects();
-            setRecentProjects(projects);
+            projectStore.setRecentProjects(projects);
         } catch (err) {
-            setError(`Failed to load recent projects: ${err}`);
+            projectStore.setError(`Failed to load recent projects: ${err}`);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
     }, []);
 
@@ -46,163 +121,171 @@ export const useProject = () => {
         sourceType: string,
         source: string,
         targetLang: string,
-        customName: string = ''  // Add optional custom name parameter
+        customName: string = ''
     ): Promise<ProjectConfig | null> => {
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
             const project = await CreateProject(sourceType, source, targetLang, customName);
-            setCurrentProject(project);
+            projectStore.setCurrentProject(project);
             await loadRecentProjects();
 
             return project;
         } catch (err) {
             const errorMsg = `Failed to create project: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
     }, [loadRecentProjects]);
 
     const loadProject = useCallback(async (projectId: string): Promise<void> => {
+        console.log('loadProject called with ID:', projectId);
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
+            console.log('Calling LoadProject from Wails...');
             const project = await LoadProject(projectId);
-            setCurrentProject(project);
+            console.log('LoadProject returned:', project);
+
+            console.log('Setting current project in store...');
+            projectStore.setCurrentProject(project);
+            console.log('Project set in store successfully');
         } catch (err) {
+            console.error('LoadProject error:', err);
             const errorMsg = `Failed to load project: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
+            console.log('loadProject finally block');
         }
     }, []);
 
     const updateProject = useCallback(async (project: ProjectConfig): Promise<void> => {
         try {
             await UpdateProject(project);
-            setCurrentProject(project);
+            projectStore.setCurrentProject(project);
         } catch (err) {
             const errorMsg = `Failed to update project: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         }
     }, []);
 
     const runPipelineStep = useCallback(async (step: string): Promise<any> => {
-        if (!currentProject) {
+        if (!state.currentProject) {
             throw new Error('No current project');
         }
 
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
-            const result = await RunPipelineStep(currentProject.id, step);
+            const result = await RunPipelineStep(state.currentProject.id, step);
 
             // Reload project to get updated completion status
-            await loadProject(currentProject.id);
+            await loadProject(state.currentProject.id);
 
             return result;
         } catch (err) {
             const errorMsg = `Pipeline step '${step}' failed: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
-    }, [currentProject, loadProject]);
+    }, [state.currentProject, loadProject]);
 
     const runFullPipeline = useCallback(async (): Promise<any> => {
-        if (!currentProject) {
+        if (!state.currentProject) {
             throw new Error('No current project');
         }
 
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
-            const result = await RunFullPipeline(currentProject.id);
+            const result = await RunFullPipeline(state.currentProject.id);
 
             // Reload project to get updated completion status
-            await loadProject(currentProject.id);
+            await loadProject(state.currentProject.id);
 
             return result;
         } catch (err) {
             const errorMsg = `Full pipeline failed: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
-    }, [currentProject, loadProject]);
+    }, [state.currentProject, loadProject]);
 
     const copyLinkedFiles = useCallback(async (): Promise<void> => {
-        if (!currentProject) {
+        if (!state.currentProject) {
             throw new Error('No current project');
         }
 
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
-            await CopyLinkedFilesToProject(currentProject.id);
+            await CopyLinkedFilesToProject(state.currentProject.id);
 
             // Reload project to get updated file references
-            await loadProject(currentProject.id);
+            await loadProject(state.currentProject.id);
         } catch (err) {
             const errorMsg = `Failed to copy linked files: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
-    }, [currentProject, loadProject]);
+    }, [state.currentProject, loadProject]);
 
     const deleteProject = useCallback(async (projectId: string): Promise<void> => {
         try {
-            setIsLoading(true);
-            setError(null);
+            projectStore.setLoading(true);
+            projectStore.setError(null);
 
             await DeleteProject(projectId);
             await loadRecentProjects(); // Refresh the list
 
             // If we're deleting the current project, close it
-            if (currentProject && currentProject.id === projectId) {
-                setCurrentProject(null);
+            if (state.currentProject && state.currentProject.id === projectId) {
+                projectStore.closeProject();
             }
         } catch (err) {
             const errorMsg = `Failed to delete project: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         } finally {
-            setIsLoading(false);
+            projectStore.setLoading(false);
         }
-    }, [currentProject, loadRecentProjects]);
+    }, [state.currentProject, loadRecentProjects]);
 
     const showProjectInFolder = useCallback(async (projectId: string): Promise<void> => {
         try {
             await ShowProjectInFolder(projectId);
         } catch (err) {
             const errorMsg = `Failed to show project in folder: ${err}`;
-            setError(errorMsg);
+            projectStore.setError(errorMsg);
             throw new Error(errorMsg);
         }
     }, []);
 
     return {
-        // State
-        currentProject,
-        recentProjects,
-        isLoading,
-        error,
-        closeProject,
+        // State from useSyncExternalStore
+        currentProject: state.currentProject,
+        recentProjects: state.recentProjects,
+        isLoading: state.isLoading,
+        error: state.error,
 
         // Actions
+        closeProject: projectStore.closeProject,
         createProject,
         loadProject,
         updateProject,
@@ -214,11 +297,11 @@ export const useProject = () => {
         showProjectInFolder,
 
         // Utilities
-        clearError: () => setError(null),
-        hasProject: currentProject !== null,
+        clearError: projectStore.clearError,
+        hasProject: state.currentProject !== null,
         getProjectProgress: () => {
-            if (!currentProject) return 0;
-            const steps = currentProject.completedSteps;
+            if (!state.currentProject) return 0;
+            const steps = state.currentProject.completedSteps;
             const completed = Object.values(steps).filter(Boolean).length;
             const total = Object.keys(steps).length;
             return Math.round((completed / total) * 100);
