@@ -3,7 +3,7 @@ import {
     Download, FileText, Languages, Zap, Brain, Cloud, ChevronDown, ChevronRight,
     Settings2, Layers, Target, CheckCircle, Circle, ArrowRight, Split
 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // Define and export the extended PipelineConfig that includes all your custom fields
 export interface ExtendedPipelineConfig {
@@ -62,6 +62,44 @@ const DubbingPipeline: React.FC<{
         synthesize: false,
         combine: false
     });
+
+    useEffect(() => {
+        // Auto-populate form fields when currentProject changes
+        if (currentProject) {
+            // Set input type based on project source
+            if (currentProject.sourceType === 'youtube') {
+                setInputType('url');
+                // Auto-populate the YouTube URL if available
+                if (currentProject.sourceUrl) {
+                    setVideoUrl(currentProject.sourceUrl);
+                }
+            } else if (currentProject.sourceType === 'video') {
+                setInputType('video');
+                // Could potentially show the original filename
+            } else if (currentProject.sourceType === 'audio') {
+                setInputType('audio');
+                // Could potentially show the original filename
+            }
+
+            // Set target language from project
+            if (currentProject.targetLanguage) {
+                setTargetLang(currentProject.targetLanguage);
+            }
+
+            // Update completed steps from project
+            if (currentProject.completedSteps) {
+                setCompletedSteps(currentProject.completedSteps);
+            }
+
+            // Auto-populate advanced settings if they exist
+            if (currentProject.settings?.transcription) {
+                setTranscriptionSettings(currentProject.settings.transcription);
+            }
+            if (currentProject.settings?.translation) {
+                setTranslationSettings(currentProject.settings.translation);
+            }
+        }
+    }, [currentProject]); // Re-run when currentProject changes
 
     // Advanced settings
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -354,6 +392,14 @@ const DubbingPipeline: React.FC<{
                                 <label className="block text-sm font-medium text-purple-300 mb-2">
                                     Upload Video File
                                 </label>
+
+                                {/* ADD THE ORIGINAL FILENAME DISPLAY HERE: */}
+                                {currentProject?.originalFilename && (
+                                    <div className="text-sm text-gray-400 mb-2">
+                                        Original file: {currentProject.originalFilename}
+                                    </div>
+                                )}
+
                                 <div
                                     className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
                                         ? 'border-purple-500 bg-purple-500/10'
@@ -364,26 +410,7 @@ const DubbingPipeline: React.FC<{
                                     onDragOver={handleDrag}
                                     onDrop={handleDrop}
                                 >
-                                    <input
-                                        ref={videoInputRef}
-                                        type="file"
-                                        accept="video/*"
-                                        onChange={handleVideoFileChange}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    {videoFile ? (
-                                        <div className="space-y-2">
-                                            <FileVideo className="mx-auto text-purple-400" size={32} />
-                                            <p className="text-white font-medium">{videoFile.name}</p>
-                                            <p className="text-gray-400 text-sm">{formatFileSize(videoFile.size)}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <Upload className="mx-auto text-gray-400" size={32} />
-                                            <p className="text-gray-300">Drop video file here or click to browse</p>
-                                            <p className="text-gray-500 text-sm">Supports MP4, AVI, MOV, and more</p>
-                                        </div>
-                                    )}
+                                    {/* Rest of the drag-and-drop area... */}
                                 </div>
                             </div>
                         )}
@@ -393,6 +420,14 @@ const DubbingPipeline: React.FC<{
                                 <label className="block text-sm font-medium text-purple-300 mb-2">
                                     Upload Audio File
                                 </label>
+
+                                {/* ADD THE ORIGINAL FILENAME DISPLAY HERE TOO: */}
+                                {currentProject?.originalFilename && (
+                                    <div className="text-sm text-gray-400 mb-2">
+                                        Original file: {currentProject.originalFilename}
+                                    </div>
+                                )}
+
                                 <div
                                     className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
                                         ? 'border-purple-500 bg-purple-500/10'
@@ -403,26 +438,7 @@ const DubbingPipeline: React.FC<{
                                     onDragOver={handleDrag}
                                     onDrop={handleDrop}
                                 >
-                                    <input
-                                        ref={audioInputRef}
-                                        type="file"
-                                        accept="audio/*"
-                                        onChange={handleAudioFileChange}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    {audioFile ? (
-                                        <div className="space-y-2">
-                                            <Volume2 className="mx-auto text-purple-400" size={32} />
-                                            <p className="text-white font-medium">{audioFile.name}</p>
-                                            <p className="text-gray-400 text-sm">{formatFileSize(audioFile.size)}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <Upload className="mx-auto text-gray-400" size={32} />
-                                            <p className="text-gray-300">Drop audio file here or click to browse</p>
-                                            <p className="text-gray-500 text-sm">Supports MP3, WAV, M4A, and more</p>
-                                        </div>
-                                    )}
+                                    {/* Rest of the drag-and-drop area... */}
                                 </div>
                             </div>
                         )}
