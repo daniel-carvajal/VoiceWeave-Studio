@@ -37,6 +37,18 @@ except ImportError:
 except Exception as e:
     print(f"⚠️ Could not load .env file: {e}")
 
+# Override config directories with environment variables if provided
+if os.getenv("KOKORO_VIDEO_OUTPUT_DIR"):
+    config["video_output_dir"] = os.getenv("KOKORO_VIDEO_OUTPUT_DIR")
+if os.getenv("KOKORO_AUDIO_OUTPUT_DIR"):
+    config["audio_output_dir"] = os.getenv("KOKORO_AUDIO_OUTPUT_DIR")
+if os.getenv("KOKORO_TRANSCRIPT_OUTPUT_DIR"):
+    config["transcript_output_dir"] = os.getenv("KOKORO_TRANSCRIPT_OUTPUT_DIR")
+
+print(f"📁 Video output: {config['video_output_dir']}")
+print(f"📁 Audio output: {config['audio_output_dir']}")
+print(f"📁 Transcript output: {config['transcript_output_dir']}")
+
 # Update config with environment variables if they exist
 env_hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
 if env_hf_token:

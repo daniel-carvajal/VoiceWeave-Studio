@@ -118,24 +118,63 @@ func (a *App) RunDubbingPipeline(config PipelineConfig) (string, error) {
 	
 	fmt.Printf("Python command: %s\n", pythonCmd)
 	
-	// Prepare command
-	cmd := exec.Command(pythonCmd, scriptPath, config.VideoURL, config.TargetLang)
+	// Prepare command - dubbing_pipeline.py expects URL and target language
+	var sourceUrl string
+	if config.VideoURL != "" {
+		sourceUrl = config.VideoURL
+	} else {
+		// Handle file inputs - for now, skip file support in full pipeline
+		return "", fmt.Errorf("full pipeline currently only supports YouTube URLs")
+	}
+	
+	cmd := exec.Command(pythonCmd, scriptPath, sourceUrl, config.TargetLang)
 	
 	// Set working directory to Python scripts directory
 	cmd.Dir = pythonDir
 	
+	// IMPORTANT: Set output directories to project location, not temp directory
+	// Get the project's output directory (should be passed from frontend)
+	outputDir := config.OutputDir
+	if outputDir == "" || outputDir == "./output" {
+		// If no specific output dir, use current working directory
+		workDir, _ := os.Getwd()
+		outputDir = filepath.Join(workDir, "output")
+	}
+	
+	// Ensure output directory exists
+	os.MkdirAll(outputDir, 0755)
+	
 	// Set environment variables for configuration
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("OUTPUT_DIR=%s", config.OutputDir),
+	env := append(os.Environ(),
+		// Override Python script's default directories
+		fmt.Sprintf("KOKORO_VIDEO_OUTPUT_DIR=%s", filepath.Join(outputDir, "videos")),
+		fmt.Sprintf("KOKORO_AUDIO_OUTPUT_DIR=%s", filepath.Join(outputDir, "audio")),
+		fmt.Sprintf("KOKORO_TRANSCRIPT_OUTPUT_DIR=%s", filepath.Join(outputDir, "transcripts")),
+		fmt.Sprintf("OUTPUT_DIR=%s", outputDir),
 		fmt.Sprintf("AUDIO_SETTINGS=%s", marshalToJSON(config.AudioSettings)),
 	)
 	
-	// Execute command
+	// Add text and segment rules as environment variables if they exist
+	if len(config.TextRules) > 0 {
+		env = append(env, fmt.Sprintf("TEXT_RULES=%s", marshalToJSON(config.TextRules)))
+	}
+	if len(config.SegmentRules) > 0 {
+		env = append(env, fmt.Sprintf("SEGMENT_RULES=%s", marshalToJSON(config.SegmentRules)))
+	}
+	
+	cmd.Env = env
+	
+	// Execute command with timeout (dubbing can take a while)
+	fmt.Printf("🚀 Starting dubbing pipeline for: %s\n", sourceUrl)
+	fmt.Printf("📁 Output directory: %s\n", outputDir)
 	output, err := cmd.CombinedOutput()
+	
 	if err != nil {
 		return "", fmt.Errorf("pipeline execution failed: %v\nOutput: %s", err, string(output))
 	}
 	
+	fmt.Printf("✅ Pipeline completed successfully\n")
+	fmt.Printf("📁 Check output in: %s\n", outputDir)
 	return string(output), nil
 }
 

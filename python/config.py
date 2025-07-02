@@ -23,7 +23,7 @@ config = {
     "max_speakers": None,  # Set to limit max speakers detected
 
     # Translation settings
-    "llm_judge_enabled": True,  # Enable LLM judge for translation quality
+    "llm_judge_enabled": False,  # Enable LLM judge for translation quality
     "qwen_endpoint": "http://127.0.0.1:1234",  # Qwen API endpoint
     "judge_model": "qwen/qwen3-14b",           # Model for LLM judge
 
