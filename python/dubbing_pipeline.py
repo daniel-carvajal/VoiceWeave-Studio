@@ -248,6 +248,52 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
 
     # Download video only if it doesn't exist
     video_path = download_video(youtube_url_or_id, video_id)
+
+    if video_path and os.path.exists(video_path):
+        # Debug original duration
+        try:
+            result = subprocess.run([
+                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                "-of", "csv=p=0", video_path
+            ], capture_output=True, text=True, check=True)
+            original_duration = float(result.stdout.strip())
+            print(f"🔍 DEBUG: ORIGINAL video duration: {original_duration:.2f}s ({original_duration/60:.1f} min)")
+        except Exception as e:
+            print(f"🔍 DEBUG: Could not get original video duration: {e}")
+        
+
+        # 🔥 SIMPLE VERSION: Copy to input folder only
+        original_filename = os.path.basename(video_path)
+        input_video_dir = "./input"
+        os.makedirs(input_video_dir, exist_ok=True)
+        input_video_path = os.path.join(input_video_dir, f"{video_id}_original{os.path.splitext(original_filename)[1]}")
+
+        print(f"📁 Copying original video to input folder...")
+        import shutil
+        shutil.copy2(video_path, input_video_path)
+
+        if os.path.exists(input_video_path):
+            file_size = os.path.getsize(input_video_path)
+            print(f"✅ Original video saved: {input_video_path} ({file_size / (1024*1024):.1f} MB)")
+        else:
+            print(f"❌ Failed to copy original video")
+
+    print(f"🔍 DEBUG: video_path returned: {video_path}")
+    print(f"🔍 DEBUG: config['video_output_dir']: {config['video_output_dir']}")
+    print(f"🔍 DEBUG: Current working directory: {os.getcwd()}")
+
+    if video_path and os.path.exists(video_path):
+        # Get the original video duration
+        try:
+            result = subprocess.run([
+                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                "-of", "csv=p=0", video_path
+            ], capture_output=True, text=True, check=True)
+            original_duration = float(result.stdout.strip())
+            print(f"🔍 DEBUG: ORIGINAL video duration: {original_duration:.2f}s ({original_duration/60:.1f} min)")
+        except Exception as e:
+            print(f"🔍 DEBUG: Could not get original video duration: {e}")
+
     if not video_path:
         print("❌ Could not download or find video file.")
         sys.exit(1)

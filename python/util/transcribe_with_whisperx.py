@@ -12,21 +12,43 @@ def transcribe_with_whisperx(video_id: str, output_dir: str, mode: str = "whispe
     """Transcribe with WhisperX with proper diarization support"""
     print("⏳ Attempting WhisperX transcription using subprocess...")
 
+    # Check for audio in the correct location (same dir as video)
+    audio_output_dir = os.getenv("KOKORO_AUDIO_OUTPUT_DIR", "./output/audio")
+    potential_audio_paths = [
+        os.path.join(audio_output_dir, f"{video_id}.wav"),
+        os.path.join(output_dir, f"{video_id}.wav"),
+        # Add other potential locations
+    ]
+    
+    audio_file = None
+    for path in potential_audio_paths:
+        if os.path.exists(path):
+            audio_file = path
+            break
+    
+    if not audio_file:
+        print(f"❌ No audio file found for {video_id} in any expected location")
+        print(f"   Searched: {potential_audio_paths}")
+        return None
+    
+    print(f"✅ Using audio file: {audio_file}")
+
     # Check if transcript already exists
     existing_transcript = check_transcript_exists(video_id, output_dir)
     if existing_transcript:
         print("📄 Using existing WhisperX transcription")
         return existing_transcript
 
-    audio_dir = os.path.join(os.getcwd(), "data", "audio_clips")
-    possible_files = list(Path(audio_dir).glob(f"{video_id}.*"))
+    # audio_dir = os.path.join(os.getcwd(), "data", "audio_clips")
+    # possible_files = list(Path(audio_dir).glob(f"{video_id}.*"))
 
-    if not possible_files:
-        print(f"❌ No audio file found for {video_id} in {audio_dir}")
-        return None
+    # if not possible_files:
+    #     print(f"❌ No audio file found for {video_id} in {audio_dir}")
+    #     return None
 
-    audio_file = str(possible_files[0])
-    print(f"📥 Using audio file for WhisperX: {audio_file}")
+    # audio_file = str(possible_files[0])
+    # print(f"📥 Using audio file for WhisperX: {audio_file}")
+    
     output_dir = config["transcript_output_dir"]
     os.makedirs(output_dir, exist_ok=True)
 
