@@ -4,6 +4,7 @@ from typing import List, Dict
 from dataclasses import asdict
 from pathlib import Path
 import json
+import shutil
 
 from rules.apply_segment_rules import apply_segment_rules
 from rules.apply_text_rules import apply_text_rules
@@ -60,8 +61,41 @@ if config.get("hf_token") and config["hf_token"] != "your_huggingface_token_here
     config["enable_diarization"] = True
     print("🎭 Diarization automatically enabled (HF token found)")
 
-def create_enhanced_audio_track(segments: List[DubSegment], output_path: str, total_duration: float, audio_settings: Dict):
-    """Create audio track with enhanced transitions and rules applied"""
+def separate_stems(audio_path: str, background_output_path: str):
+    """Separate vocals from background using demucs"""
+    print("🎵 Separating vocals from background audio...")
+    
+    # Create temp directory for demucs output
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        # Run demucs with two-stems=vocals
+        subprocess.run([
+            "demucs", "--two-stems=vocals", "-o", temp_dir, audio_path
+        ], check=True)
+        
+        # Find the background audio (no_vocals)
+        audio_filename = os.path.splitext(os.path.basename(audio_path))[0]
+        background_source = os.path.join(temp_dir, "htdemucs", audio_filename, "no_vocals.wav")
+        
+        if os.path.exists(background_source):
+            # Copy to our output location
+            shutil.copy2(background_source, background_output_path)
+            print(f"✅ Background audio extracted: {background_output_path}")
+            return True
+        else:
+            print("❌ Demucs separation failed - background file not found")
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Demucs separation failed: {e}")
+        return False
+    finally:
+        # Clean up temp directory
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+def create_enhanced_audio_track(segments: List[DubSegment], output_path: str, total_duration: float, audio_settings: Dict, background_audio_path: str = None):
+    """Create audio track with enhanced transitions, rules applied, and background audio"""
     import tempfile
     
     print("🎯 Creating enhanced audio track with custom rules...")
@@ -141,26 +175,43 @@ def create_enhanced_audio_track(segments: List[DubSegment], output_path: str, to
         print("⚠️ No audio segments to process")
         return False
     
-    # Build enhanced FFmpeg command
-    cmd = ["ffmpeg", "-y", "-i", silent_track]
+    # Build enhanced FFmpeg command with background audio support
+    if background_audio_path and os.path.exists(background_audio_path):
+        cmd = ["ffmpeg", "-y", "-i", background_audio_path, "-i", silent_track]
+        background_input_index = 0
+        audio_input_offset = 2  # Vocals start at input 2
+        print(f"🎵 Including background audio: {background_audio_path}")
+    else:
+        cmd = ["ffmpeg", "-y", "-i", silent_track]
+        background_input_index = None
+        audio_input_offset = 1  # Vocals start at input 1
+        print("🎵 No background audio - dubbed vocals only")
     
     # Add all audio files as inputs
     for ts in timed_segments:
         cmd.extend(["-i", ts['segment'].audio_file])
         
-    # Build simpler filter - delay all inputs then mix them all at once
+    # Build filter - delay all inputs then mix them
     filter_parts = []
 
     # Add all delayed inputs
     for i, ts in enumerate(timed_segments):
-        input_index = i + 1
+        input_index = i + audio_input_offset
         delay_ms = int(ts['start_time'] * 1000)
         print(f"🔍 DEBUG: Segment {i} delay = {delay_ms}ms ({ts['start_time']:.2f}s)")
         filter_parts.append(f"[{input_index}:a]adelay={delay_ms}|{delay_ms}[delayed{i}]")
 
-    # Mix all delayed inputs together in one go (much more reliable)
+    # Mix all delayed inputs together
     delayed_inputs = [f"[delayed{i}]" for i in range(len(timed_segments))]
-    mix_filter = "".join(delayed_inputs) + f"amix=inputs={len(timed_segments)}:duration=longest[final]"
+    
+    if background_input_index is not None:
+        # Mix background with dubbed vocals (background at 30% volume, vocals at 100%)
+        background_weight = audio_settings.get("backgroundVolume", 0.3)
+        vocal_weights = " ".join(["1.0"] * len(timed_segments))
+        mix_filter = f"[{background_input_index}:a]" + "".join(delayed_inputs) + f"amix=inputs={len(timed_segments)+1}:duration=longest:weights={background_weight} {vocal_weights}[final]"
+    else:
+        mix_filter = "".join(delayed_inputs) + f"amix=inputs={len(timed_segments)}:duration=longest[final]"
+    
     filter_parts.append(mix_filter)
 
     filter_complex = ";".join(filter_parts)
@@ -192,6 +243,7 @@ def update_config_for_loose_sync():
         "sync_every_n_segments": 3,         # Force sync every N segments (reduced from 4)
         "force_sync_threshold": 1.5,        # Force sync if drift > 1.5s (new)
         "early_segment_boost": True,        # Be more aggressive with early segments (new)
+        "backgroundVolume": 0.3,            # Background audio volume (30%)
     }
     return config
 
@@ -249,6 +301,10 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
     # Download video only if it doesn't exist
     video_path = download_video(youtube_url_or_id, video_id)
 
+    # Prepare audio output directory
+    audio_dir = config["audio_output_dir"]
+    os.makedirs(audio_dir, exist_ok=True)
+
     if video_path and os.path.exists(video_path):
         # Debug original duration
         try:
@@ -260,7 +316,22 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
             print(f"🔍 DEBUG: ORIGINAL video duration: {original_duration:.2f}s ({original_duration/60:.1f} min)")
         except Exception as e:
             print(f"🔍 DEBUG: Could not get original video duration: {e}")
+
+        # Extract audio from video for stem separation
+        original_audio_path = os.path.join(audio_dir, f"{video_id}_original_audio.wav")
+        print("🎵 Extracting audio from video...")
+        subprocess.run([
+            "ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "pcm_s16le", 
+            "-ar", "44100", "-ac", "2", original_audio_path
+        ], check=True)
         
+        # Run demucs stem separation
+        background_audio_path = os.path.join(audio_dir, f"{video_id}_background.wav")
+        stem_success = separate_stems(original_audio_path, background_audio_path)
+        
+        if not stem_success:
+            print("⚠️ Stem separation failed, proceeding without background audio")
+            background_audio_path = None
 
         # 🔥 SIMPLE VERSION: Copy to input folder only
         original_filename = os.path.basename(video_path)
@@ -269,7 +340,6 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
         input_video_path = os.path.join(input_video_dir, f"{video_id}_original{os.path.splitext(original_filename)[1]}")
 
         print(f"📁 Copying original video to input folder...")
-        import shutil
         shutil.copy2(video_path, input_video_path)
 
         if os.path.exists(input_video_path):
@@ -277,22 +347,12 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
             print(f"✅ Original video saved: {input_video_path} ({file_size / (1024*1024):.1f} MB)")
         else:
             print(f"❌ Failed to copy original video")
+    else:
+        background_audio_path = None
 
     print(f"🔍 DEBUG: video_path returned: {video_path}")
     print(f"🔍 DEBUG: config['video_output_dir']: {config['video_output_dir']}")
     print(f"🔍 DEBUG: Current working directory: {os.getcwd()}")
-
-    if video_path and os.path.exists(video_path):
-        # Get the original video duration
-        try:
-            result = subprocess.run([
-                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                "-of", "csv=p=0", video_path
-            ], capture_output=True, text=True, check=True)
-            original_duration = float(result.stdout.strip())
-            print(f"🔍 DEBUG: ORIGINAL video duration: {original_duration:.2f}s ({original_duration/60:.1f} min)")
-        except Exception as e:
-            print(f"🔍 DEBUG: Could not get original video duration: {e}")
 
     if not video_path:
         print("❌ Could not download or find video file.")
@@ -320,10 +380,6 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
     
     # Apply segment rules for timing and transitions
     segments = apply_segment_rules(segments, dubbing_rules.get("segmentRules", []))
-
-    # Prepare audio output directory
-    audio_dir = config["audio_output_dir"]
-    os.makedirs(audio_dir, exist_ok=True)
 
     # Check if we can reuse existing segments and audio synthesis
     segments = load_existing_segments_if_available(video_id, segments, audio_dir)
@@ -373,7 +429,6 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
             json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
         print(f"📝 Segment metadata saved to {segment_data_path}")
 
-
         print("🧠 Synthesizing transcript chunks via Kokoro...")
 
         audio_paths = []
@@ -390,7 +445,7 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
     # Add loose sync settings to config
     config.update(update_config_for_loose_sync())
 
-    # Enhanced audio creation with loose sync
+    # Enhanced audio creation with loose sync and background audio
     audio_settings = dubbing_rules.get("audioSettings", {})
     if video_path and segments:
         try:
@@ -401,9 +456,9 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
             ], capture_output=True, text=True, check=True)
             total_duration = float(result.stdout.strip())
             
-            # Use enhanced audio creation with loose sync
-            if create_enhanced_audio_track_with_loose_sync(segments, final_audio_path, total_duration, audio_settings):
-                print(f"🎬 Enhanced audio with loose sync saved to {final_audio_path}")
+            # Use enhanced audio creation with loose sync and background audio
+            if create_enhanced_audio_track_with_loose_sync(segments, final_audio_path, total_duration, audio_settings, background_audio_path):
+                print(f"🎬 Enhanced audio with loose sync and background saved to {final_audio_path}")
 
                 # Apply audio effects
                 preset = config.get("audio_effects_preset", "voice")

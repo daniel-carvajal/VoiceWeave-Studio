@@ -6,8 +6,8 @@ voice_ms = "em_alex" # Simple
 
 speaker_voices = {
     "SPEAKER_00": voice_ml,
-    "SPEAKER_01": voice_mh_2,
     "SPEAKER_02": voice_ms,
+    "SPEAKER_01": voice_mh_2,
     "SPEAKER_03": "ef_dora",
     "SPEAKER_UNKNOWN": "em_alex"
 }

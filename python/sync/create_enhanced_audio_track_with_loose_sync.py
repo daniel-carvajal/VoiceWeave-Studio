@@ -4,7 +4,7 @@ from typing import Dict, List
 from structs.DubSegment import DubSegment
 
 
-def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], output_path: str, total_duration: float, audio_settings: Dict):
+def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], output_path: str, total_duration: float, audio_settings: Dict, background_audio_path=None):
     """Create audio track with loose synchronization and consistent volume"""
     print("🎯 Creating enhanced audio track with loose synchronization and FIXED volume...")
     
@@ -33,6 +33,16 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
     # Add inputs for valid segments
     for idx, (original_i, seg) in enumerate(valid_segments):
         cmd.extend(["-i", seg.audio_file])
+    
+    # Add background audio input (will be the last input)
+    background_input_index = len(valid_segments)
+    if background_audio_path and os.path.exists(background_audio_path):
+        cmd.extend(["-i", background_audio_path])
+        print(f"🎵 Adding background audio: {background_audio_path}")
+        has_background = True
+    else:
+        print("⚠️ Background audio not found or not specified")
+        has_background = False
     
     # Process timing for valid segments
     for idx, (original_i, seg) in enumerate(valid_segments):
@@ -107,14 +117,16 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
     print(f"   Total segments: {total_segments}")
     print(f"   Synced segments: {synced_segments} ({synced_segments/total_segments*100:.1f}%)")
     
-    # ===== FIXED FFMPEG LOGIC WITH CONSISTENT VOLUME =====
+    # ===== FIXED FFMPEG LOGIC WITH CONSISTENT VOLUME AND BACKGROUND AUDIO =====
     
     filter_parts = []
     
     # Get volume setting from config
     target_volume = config.get("output_volume", 1.8)
+    background_volume = config.get("background_volume", 0.3)  # Lower volume for background
     audio_quality = config.get("audio_quality", "128k")
     
+    # Process speech segments
     for i, ts in enumerate(timed_segments):
         # Create delay filter with pre-normalization to prevent volume ramping
         delay_ms = int(ts['start_time'] * 1000)
@@ -122,24 +134,35 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
         filter_parts.append(f"[{i}:a]volume=0.7,adelay={delay_ms}|{delay_ms}[delayed{i}]")
         print(f"   Segment {ts['original_index']}: scheduled at {ts['start_time']:.2f}s")
     
-    # Mix all inputs with fixed weights to prevent dynamic volume adjustment
+    # Mix all speech inputs with fixed weights to prevent dynamic volume adjustment
     delayed_inputs = [f"[delayed{i}]" for i in range(len(timed_segments))]
     num_inputs = len(delayed_inputs)
     
     # Use equal weights and disable normalization to prevent volume ramping
     weights = " ".join(["1"] * num_inputs)
-    mix_filter = "".join(delayed_inputs) + f"amix=inputs={num_inputs}:weights={weights}:normalize=0[mixed]"
+    mix_filter = "".join(delayed_inputs) + f"amix=inputs={num_inputs}:weights={weights}:normalize=0[speech_mixed]"
     filter_parts.append(mix_filter)
     
-    # Apply final volume boost (simple, no dynamic processing)
-    filter_parts.append(f"[mixed]volume={target_volume}[out]")
+    # Apply final volume boost to speech (simple, no dynamic processing)
+    filter_parts.append(f"[speech_mixed]volume={target_volume}[speech_out]")
     
-    print(f"🔊 Volume: Pre-normalized segments + {target_volume}x final boost (NO dynamic processing)")
+    if has_background:
+        # Process background audio - just set volume, it should play full length in parallel
+        filter_parts.append(f"[{background_input_index}:a]volume={background_volume}[background_out]")
+        
+        # Mix speech and background together
+        filter_parts.append("[speech_out][background_out]amix=inputs=2:weights=1 1:normalize=0[final_out]")
+        
+        print(f"🔊 Volume: Speech {target_volume}x + Background {background_volume}x (NO dynamic processing)")
+        final_map = "[final_out]"
+    else:
+        print(f"🔊 Volume: Speech only {target_volume}x (NO dynamic processing)")
+        final_map = "[speech_out]"
     
     filter_complex = ";".join(filter_parts)
     cmd.extend([
         "-filter_complex", filter_complex,
-        "-map", "[out]",
+        "-map", final_map,
         "-c:a", "libmp3lame",
         "-b:a", audio_quality,
         output_path
