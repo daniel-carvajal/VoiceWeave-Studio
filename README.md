@@ -1,19 +1,29 @@
-# README
+# VoiceWeave Studio
+> AI-powered video dubbing pipeline - weaving voices across languages
 
-## About
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-This is the official Wails React-TS template.
+Transform any video into natural, culturally-aware dubbing by seamlessly weaving voices across languages using advanced AI translation and high-quality voice synthesis.
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## Requirements
+- Python 3.9+ (tested with 3.12.3)
+- Go 1.18+ (tested with 1.24.3)
+- FFmpeg
+- Hugging Face token (optional, for speaker diarization)
+- Claude API key (for translation)
 
-## Live Development
+## ⚖️ License
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+VoiceWeave Studio is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
-## Building
+- ✅ **Free for open source projects** - Use, modify, and distribute freely
+- ✅ **Community contributions** - All improvements must be shared back
+- ⚠️ **Network use requires disclosure** - If you deploy VoiceWeave Studio as a service, you must open source your changes
+- 💼 **Commercial licensing available** - Contact us for proprietary use licensing
 
-To build a redistributable, production mode package, use `wails build`.
+## 🏢 Commercial Licensing
+
+VoiceWeave Studio is available under AGPL-3.0 for open source use.
+
+For commercial licensing inquiries or consulting opportunities:
+Contact: async.v99@gmail.com
