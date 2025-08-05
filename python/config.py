@@ -37,4 +37,9 @@ config = {
 
     # Audio Effects
     "audio_effects_preset": "voice",  # "voice", "podcast", "cinematic", "clean", or "off"
+
+    # Add to config dictionary:
+    "claude_api_key": None,  # Will be read from ANTHROPIC_API_KEY env var
+    "translation_batch_size": 8,  # Process 8 segments at once
+    "translation_context_size": 3,  # Include 3 previous segments for context
 }
