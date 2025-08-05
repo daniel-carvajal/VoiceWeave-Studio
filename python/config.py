@@ -34,6 +34,8 @@ config = {
     "audio_quality": "128k",        # Audio bitrate (128k, 192k, 256k, 320k)
     "audio_sample_rate": 22050,     # Sample rate (22050, 44100, 48000)
     "prevent_clipping": True,       # Enable limiter to prevent distortion
+    "background_volume": 0.7,  # Background audio volume (0.0 to 1.0)
+    "vocal_volume": 1,       # Dubbed vocals volume (0.0 to 2.0+)
 
     # Audio Effects
     "audio_effects_preset": "voice",  # "voice", "podcast", "cinematic", "clean", or "off"

@@ -122,8 +122,9 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
     filter_parts = []
     
     # Get volume setting from config
-    target_volume = config.get("output_volume", 1.8)
-    background_volume = config.get("background_volume", 0.3)  # Lower volume for background
+    # target_volume = config.get("output_volume", 1.8)
+    target_volume = config.get("vocal_volume", 1)  # Dubbed vocals volume
+    background_volume = config.get("background_volume", 1)  # Lower volume for background
     audio_quality = config.get("audio_quality", "128k")
     
     # Process speech segments
@@ -131,7 +132,7 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
         # Create delay filter with pre-normalization to prevent volume ramping
         delay_ms = int(ts['start_time'] * 1000)
         # Pre-normalize each segment to consistent level (0.7 = safe level)
-        filter_parts.append(f"[{i}:a]volume=0.7,adelay={delay_ms}|{delay_ms}[delayed{i}]")
+        filter_parts.append(f"[{i}:a]volume=0.6,adelay={delay_ms}|{delay_ms}[delayed{i}]")
         print(f"   Segment {ts['original_index']}: scheduled at {ts['start_time']:.2f}s")
     
     # Mix all speech inputs with fixed weights to prevent dynamic volume adjustment
@@ -151,6 +152,7 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
         filter_parts.append(f"[{background_input_index}:a]volume={background_volume}[background_out]")
         
         # Mix speech and background together
+        # filter_parts.append("[speech_out][background_out]amix=inputs=2:weights=1 1:normalize=0[final_out]")
         filter_parts.append("[speech_out][background_out]amix=inputs=2:weights=1 1:normalize=0[final_out]")
         
         print(f"🔊 Volume: Speech {target_volume}x + Background {background_volume}x (NO dynamic processing)")
