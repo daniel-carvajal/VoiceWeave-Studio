@@ -1,4 +1,4 @@
-# Kokoro Studio: Complete Technical Implementation Specification
+# VoiceWeave Studio: Complete Technical Implementation Specification
 
 ## 🎯 **Project Context**
 - **Current Status**: TypeScript errors fixed, step-by-step UI built, Python pipeline at `python/dubbing_pipeline.py`
@@ -782,7 +782,7 @@ Create `python/project_pipeline.py`:
 ```python
 #!/usr/bin/env python3
 """
-Project-based dubbing pipeline for Kokoro Studio
+Project-based dubbing pipeline for VoiceWeave Studio
 Handles step-by-step execution with project persistence
 """
 
@@ -1245,7 +1245,7 @@ class ProjectPipeline:
             }
 
 def main():
-    parser = argparse.ArgumentParser(description="Kokoro Studio Project Pipeline")
+    parser = argparse.ArgumentParser(description="VoiceWeave Studio Project Pipeline")
     parser.add_argument("project_dir", help="Project directory path")
     parser.add_argument("step", choices=["download", "transcribe", "translate", "synthesize", "combine"], 
                        help="Pipeline step to execute")

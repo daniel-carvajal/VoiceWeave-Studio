@@ -146,7 +146,7 @@ const WelcomeScreen: React.FC = () => {
         <div className="max-w-5xl mx-auto">
             {/* Header */}
             <div className="text-center mb-12">
-                <h1 className="text-5xl font-bold text-white mb-4">Welcome to Kokoro Studio</h1>
+                <h1 className="text-5xl font-bold text-white mb-4">Welcome to VoiceWeave Studio</h1>
                 <p className="text-xl text-purple-200">AI-powered video dubbing made simple</p>
             </div>
 

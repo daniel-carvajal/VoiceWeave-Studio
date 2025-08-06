@@ -108,7 +108,7 @@ const ProjectManager: React.FC = () => {
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-white mb-2">Welcome to Kokoro Studio</h1>
+                <h1 className="text-4xl font-bold text-white mb-2">Welcome to VoiceWeave Studio</h1>
                 <p className="text-purple-200">AI-powered video dubbing made simple</p>
             </div>
 

@@ -66,7 +66,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "Kokoro Studio",
+		Title:  "VoiceWeave Studio",
 		Width:  1400,
 		Height: 1000,
 		AssetServer: &assetserver.Options{

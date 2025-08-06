@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Project-based dubbing pipeline for Kokoro Studio
+Project-based dubbing pipeline for VoiceWeave Studio
 Handles step-by-step execution with project persistence
 """
 
@@ -355,7 +355,7 @@ def setup_project_config():
             config[key] = value
 
 def main():
-    parser = argparse.ArgumentParser(description="Kokoro Studio Project Pipeline")
+    parser = argparse.ArgumentParser(description="VoiceWeave Studio Project Pipeline")
     parser.add_argument("project_dir", help="Project directory path")
     parser.add_argument("step", choices=["download", "transcribe", "translate", "synthesize", "combine"], 
                        help="Pipeline step to execute")
@@ -827,7 +827,7 @@ def setup_project_config():
             config[key] = value
 
 def main():
-    parser = argparse.ArgumentParser(description="Kokoro Studio Project Pipeline")
+    parser = argparse.ArgumentParser(description="VoiceWeave Studio Project Pipeline")
     parser.add_argument("project_dir", help="Project directory path")
     parser.add_argument("step", choices=["download", "transcribe", "translate", "synthesize", "combine"], 
                        help="Pipeline step to execute")

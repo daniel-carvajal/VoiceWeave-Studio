@@ -12,6 +12,25 @@ Transform any video into natural, culturally-aware dubbing by seamlessly weaving
 - Hugging Face token (optional, for speaker diarization)
 - Claude API key (for translation)
 
+## 📸 Screenshots
+
+<details>
+<summary>Click to view more screenshots</summary>
+
+### Full Pipeline View
+![Full Pipeline](screenshots/Pipeline-Full.png)
+
+### Step-by-Step Process
+![Pipeline Steps](screenshots/Pipeline-Steps.png)
+
+### Voice Management
+![Voice Manager](screenshots/Voice-Manager.png)
+
+### Welcome Screen - Project Manager
+![Welcome](screenshots/Welcome.png)
+
+</details>
+
 ## ⚖️ License
 
 VoiceWeave Studio is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
