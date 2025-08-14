@@ -6,7 +6,10 @@
 Transform any video into natural, culturally-aware dubbing by seamlessly weaving voices across languages using advanced AI translation and high-quality voice synthesis.
 
 ## Demo
-![Demo](screenshots/demo.mp4)
+<video width="480" controls>
+  <source src="screenshots/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## Requirements
 - Python 3.9+ (tested with 3.12.3)
