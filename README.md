@@ -8,8 +8,6 @@ Transform any video into natural, culturally-aware dubbing by seamlessly weaving
 ## Demo
 https://github.com/user-attachments/assets/45f08a62-7389-41d2-824d-c11b5ab5d004
 
-
-
 ## Requirements
 - Python 3.9+ (tested with 3.12.3)
 - Go 1.18+ (tested with 1.24.3)
