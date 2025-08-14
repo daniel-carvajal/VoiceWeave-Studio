@@ -124,7 +124,7 @@ def create_enhanced_audio_track_with_loose_sync(segments: List[DubSegment], outp
     # Get volume setting from config
     # target_volume = config.get("output_volume", 1.8)
     target_volume = config.get("vocal_volume", 1)  # Dubbed vocals volume
-    background_volume = config.get("background_volume", 1)  # Lower volume for background
+    background_volume = config.get("background_volume", 0.8)  # Lower volume for background
     audio_quality = config.get("audio_quality", "128k")
     
     # Process speech segments
