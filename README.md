@@ -6,7 +6,7 @@
 Transform any video into natural, culturally-aware dubbing by seamlessly weaving voices across languages using advanced AI translation and high-quality voice synthesis.
 
 ## Demo
-https://github.com/user-attachments/assets/45f08a62-7389-41d2-824d-c11b5ab5d004
+https://github.com/user-attachments/assets/d9815fa9-a3d9-4c4e-9aca-5debd7b3c806
 
 ## Requirements
 - Python 3.9+ (tested with 3.12.3)
