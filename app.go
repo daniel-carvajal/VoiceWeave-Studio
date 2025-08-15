@@ -146,12 +146,17 @@ func (a *App) RunDubbingPipeline(config PipelineConfig) (string, error) {
 	
 	// Set environment variables for configuration
 	env := append(os.Environ(),
+        // Override config directories with environment variables if provided
 		// Override Python script's default directories
 		fmt.Sprintf("KOKORO_VIDEO_OUTPUT_DIR=%s", filepath.Join(outputDir, "videos")),
 		fmt.Sprintf("KOKORO_AUDIO_OUTPUT_DIR=%s", filepath.Join(outputDir, "audio")),
 		fmt.Sprintf("KOKORO_TRANSCRIPT_OUTPUT_DIR=%s", filepath.Join(outputDir, "transcripts")),
 		fmt.Sprintf("OUTPUT_DIR=%s", outputDir),
 		fmt.Sprintf("AUDIO_SETTINGS=%s", marshalToJSON(config.AudioSettings)),
+
+        // Add API keys
+        fmt.Sprintf("ANTHROPIC_API_KEY=%s", ""),
+        fmt.Sprintf("HF_TOKEN=%s", ""),
 	)
 	
 	// Add text and segment rules as environment variables if they exist

@@ -37,28 +37,35 @@ def download_video(youtube_url: str, video_id: str, output_dir: str = None):
 
         print("video downloaded to ", output_dir)
         
-
-        if downloaded_video:
-            # 🔥 CHANGE: Extract audio to the AUDIO directory, not videos directory
-            audio_output_dir = os.getenv("KOKORO_AUDIO_OUTPUT_DIR", "./output/audio")
-            os.makedirs(audio_output_dir, exist_ok=True)
-            audio_path = os.path.join(audio_output_dir, f"{video_id}.wav")
-            
-            print(f"🎵 Extracting audio from downloaded video...")
-            try:
-                ffmpeg_cmd = [
-                    "ffmpeg", "-y",
-                    "-i", downloaded_video,
-                    "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
-                    audio_path  # <-- This should go to audio folder, not videos folder
-                ]
-                subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
-                print(f"✅ Audio extracted to: {audio_path}")
-            except subprocess.CalledProcessError as e:
-                print(f"⚠️ Audio extraction failed: {e}")
-        
+        if video_id:
+            extract_audio_from_original_video(video_id, downloaded_video)
         return downloaded_video
             
     except subprocess.CalledProcessError as e:
         print(f"❌ Error downloading: {e}")
         sys.exit(1)
+
+
+
+def extract_audio_from_original_video(video_id, downloaded_video):
+    # 🔥 Extract audio to the AUDIO directory, not videos directory
+    audio_output_dir = os.getenv("KOKORO_AUDIO_OUTPUT_DIR", "./output/audio")
+    os.makedirs(audio_output_dir, exist_ok=True)
+    audio_path = os.path.join(audio_output_dir, f"{video_id}.wav")
+    
+    print(f"🎵 Extracting audio from downloaded video...")
+    # Creates {video_id}.wav (for WhisperX)
+    # WhisperX audio: 16kHz, mono (for transcription)
+    try:
+        ffmpeg_cmd = [
+            "ffmpeg", "-y",
+            "-i", downloaded_video,
+            "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+            audio_path  # <-- This should go to audio folder, not videos folder
+        ]
+        subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+        print(f"✅ Audio extracted to: {audio_path}")
+
+        return audio_path
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Audio extraction failed: {e}")

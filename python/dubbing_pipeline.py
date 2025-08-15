@@ -9,7 +9,7 @@ import shutil
 from rules.apply_segment_rules import apply_segment_rules
 from rules.apply_text_rules import apply_text_rules
 from util.translation_service import TranslationService 
-from util.download_video import download_video
+from util.download_video import download_video, extract_audio_from_original_video
 from util.fetch_transcript import fetch_transcript
 from util.transcribe_with_whisperx import transcribe_with_whisperx
 from util.normalize.normalize_whisperx_segments import normalize_whisperx_segments
@@ -28,6 +28,8 @@ from config import config
 from rules.load_dubbing_rules import load_dubbing_rules
 
 from sync.create_enhanced_audio_track_with_loose_sync import create_enhanced_audio_track_with_loose_sync
+
+overwrite_segments = config.get("overwrite_segments_json", False)
 
 try:
     from dotenv import load_dotenv
@@ -299,18 +301,21 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
     print(f"🎥 Extracted video ID: {video_id}")
 
     # Download video only if it doesn't exist
-    video_path = download_video(youtube_url_or_id, video_id)
+    original_video_path = download_video(youtube_url_or_id, video_id)
 
     # Prepare audio output directory
     audio_dir = config["audio_output_dir"]
     os.makedirs(audio_dir, exist_ok=True)
 
-    if video_path and os.path.exists(video_path):
+    # One video exists:
+    if original_video_path and os.path.exists(original_video_path):
         # Debug original duration
         try:
+            # Creates {video_id}_original_audio.wav (for stem separation)
+            # Stem separation audio: 44.1kHz, stereo (for better quality separation)
             result = subprocess.run([
                 "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                "-of", "csv=p=0", video_path
+                "-of", "csv=p=0", original_video_path
             ], capture_output=True, text=True, check=True)
             original_duration = float(result.stdout.strip())
             print(f"🔍 DEBUG: ORIGINAL video duration: {original_duration:.2f}s ({original_duration/60:.1f} min)")
@@ -321,7 +326,7 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
         original_audio_path = os.path.join(audio_dir, f"{video_id}_original_audio.wav")
         print("🎵 Extracting audio from video...")
         subprocess.run([
-            "ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "pcm_s16le", 
+            "ffmpeg", "-y", "-i", original_video_path, "-vn", "-acodec", "pcm_s16le", 
             "-ar", "44100", "-ac", "2", original_audio_path
         ], check=True)
         
@@ -334,13 +339,13 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
             background_audio_path = None
 
         # 🔥 SIMPLE VERSION: Copy to input folder only
-        original_filename = os.path.basename(video_path)
+        original_filename = os.path.basename(original_video_path)
         input_video_dir = "./input"
         os.makedirs(input_video_dir, exist_ok=True)
         input_video_path = os.path.join(input_video_dir, f"{video_id}_original{os.path.splitext(original_filename)[1]}")
 
         print(f"📁 Copying original video to input folder...")
-        shutil.copy2(video_path, input_video_path)
+        shutil.copy2(original_video_path, input_video_path)
 
         if os.path.exists(input_video_path):
             file_size = os.path.getsize(input_video_path)
@@ -350,24 +355,24 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
     else:
         background_audio_path = None
 
-    print(f"🔍 DEBUG: video_path returned: {video_path}")
+    print(f"🔍 DEBUG: video_path returned: {original_video_path}")
     print(f"🔍 DEBUG: config['video_output_dir']: {config['video_output_dir']}")
     print(f"🔍 DEBUG: Current working directory: {os.getcwd()}")
 
-    if not video_path:
+    if not original_video_path:
         print("❌ Could not download or find video file.")
         sys.exit(1)
 
     force_whisperx = config.get("force_whisperx", True)
-
-    if not force_whisperx:
+    
+    if force_whisperx and overwrite_segments:
+        print("⚙️ Force WhisperX mode enabled — checking for existing transcription first.")
+        transcript = transcribe_with_whisperx(video_id, output_dir=config["transcript_output_dir"], mode="whisperx")
+    else:
         transcript = fetch_transcript(video_id, output_dir=config["transcript_output_dir"], mode="human")
         if not transcript:
             print("⚠️ No transcript data. Attempting to transcribe with WhisperX.")
             return
-    else:
-        print("⚙️ Force WhisperX mode enabled — checking for existing transcription first.")
-        transcript = transcribe_with_whisperx(video_id, output_dir=config["transcript_output_dir"], mode="whisperx")
 
     if not transcript:
         print("❌ Could not obtain transcript data.")
@@ -383,62 +388,60 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
 
     # Check if we can reuse existing segments and audio synthesis
     segments = load_existing_segments_if_available(video_id, segments, audio_dir)
-    synthesis_exists, existing_audio_paths = check_audio_synthesis_exists(video_id, segments, audio_dir)
-    print(f"🔍 DEBUG: synthesis_exists = {synthesis_exists}")
+    audio_synthesis_exists, existing_audio_paths = check_audio_synthesis_exists(video_id, segments, audio_dir, overwrite_segments)
+
+    print(f"🔍 DEBUG: synthesis_exists = {audio_synthesis_exists}")
     print(f"🔍 DEBUG: existing_audio_paths = {existing_audio_paths}")
     print(f"🔍 DEBUG: segments file path = {Path(audio_dir) / f'{video_id}_segments.json'}")
     print(f"🔍 DEBUG: segments file exists = {os.path.exists(Path(audio_dir) / f'{video_id}_segments.json')}")
 
-    if synthesis_exists:
+    segment_data_path = Path(audio_dir) / f"{video_id}_segments.json"
+
+    if audio_synthesis_exists:
         print("🎯 Reusing existing audio synthesis")
         audio_paths = existing_audio_paths
         
-        # Save updated segment metadata (in case of any changes)
-        segment_data_path = Path(audio_dir) / f"{video_id}_segments.json"
-        with open(segment_data_path, "w", encoding="utf-8") as f:
-            json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
-        print(f"📝 Updated segment metadata saved to {segment_data_path}")
+        # Only save segments if overwrite is enabled AND we made changes
+        if overwrite_segments:
+            with open(segment_data_path, "w", encoding="utf-8") as f:
+                json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
+            print(f"📝 Updated segment metadata saved to {segment_data_path}")
+            
     else:
         # Need to translate and/or synthesize
         print("🔄 Processing segments (translation and/or synthesis needed)")
         
-        # Check if we need translation (if translated_text is empty)
+        # Only translate if we don't have translations
         needs_translation = any(not seg.translated_text for seg in segments)
         if needs_translation:
-            # Pass the config to the translation service
             translator = TranslationService(config=config)
             segments = translator.translate_segments(segments)
         else:
             print("✅ Using existing translations")
 
-        # Apply text replacement rules to translations
-        text_rules = dubbing_rules.get("textRules", [])
-        if text_rules:
-            print("📝 Applying text replacement rules...")
-            for segment in segments:
-                if segment.translated_text:
-                    segment.translated_text = apply_text_rules(
-                        segment.translated_text, 
-                        config["target_language"], 
-                        text_rules
-                    )
-
-        # Save segment metadata before synthesis
-        segment_data_path = Path(audio_dir) / f"{video_id}_segments.json"
-        with open(segment_data_path, "w", encoding="utf-8") as f:
-            json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
-        print(f"📝 Segment metadata saved to {segment_data_path}")
+        # Apply text replacement rules ONLY if overwrite_segments is True
+        # (because rules might have changed since last run)
+        if overwrite_segments:
+            text_rules = dubbing_rules.get("textRules", [])
+            if text_rules:
+                print("📝 Applying text replacement rules...")
+                for segment in segments:
+                    if segment.translated_text:
+                        segment.translated_text = apply_text_rules(
+                            segment.translated_text, 
+                            config["target_language"], 
+                            text_rules
+                        )
 
         print("🧠 Synthesizing transcript chunks via Kokoro...")
-
         audio_paths = []
         text_chunks_to_audio(segments, audio_dir, audio_paths)
 
-        # Save updated segment metadata AFTER synthesis
-        segment_data_path = Path(audio_dir) / f"{video_id}_segments.json"
-        with open(segment_data_path, "w", encoding="utf-8") as f:
-            json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
-        print(f"📝 Updated segment metadata saved to {segment_data_path}")
+        if overwrite_segments:
+            # Always save segments after synthesis (to update audio_file paths)
+            with open(segment_data_path, "w", encoding="utf-8") as f:
+                json.dump([asdict(seg) for seg in segments], f, indent=2, ensure_ascii=False)
+            print(f"📝 Updated segment metadata saved to {segment_data_path}")
 
     final_audio_path = os.path.join(audio_dir, f"{video_id}_dubbed.mp3")
 
@@ -447,12 +450,12 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
 
     # Enhanced audio creation with loose sync and background audio
     audio_settings = dubbing_rules.get("audioSettings", {})
-    if video_path and segments:
+    if original_video_path and segments:
         try:
             # Get total video duration
             result = subprocess.run([
                 "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-                "-of", "csv=p=0", video_path
+                "-of", "csv=p=0", original_video_path
             ], capture_output=True, text=True, check=True)
             total_duration = float(result.stdout.strip())
             
@@ -481,7 +484,7 @@ def main(youtube_url_or_id: str, target_lang: str = "es"):
 
     # Use the actual downloaded video path
     dubbed_video_path = os.path.join(audio_dir, f"{video_id}_dubbed_video.mp4")
-    merge_audio_with_video(video_path, final_audio_path, dubbed_video_path)
+    merge_audio_with_video(original_video_path, final_audio_path, dubbed_video_path)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

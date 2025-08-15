@@ -54,7 +54,7 @@ def check_transcript_exists(video_id: str, output_dir: str) -> Optional[List[Dic
     
     return None
 
-def check_audio_synthesis_exists(video_id: str, segments: List[DubSegment], audio_dir: str) -> Tuple[bool, List[str]]:
+def check_audio_synthesis_exists(video_id: str, segments: List[DubSegment], audio_dir: str, overwrite_segments: bool = False) -> Tuple[bool, List[str]]:
     """Check if audio synthesis already exists and return status + audio paths"""
     segment_data_path = Path(audio_dir) / f"{video_id}_segments.json"
     
@@ -73,7 +73,13 @@ def check_audio_synthesis_exists(video_id: str, segments: List[DubSegment], audi
         # Check if segment count matches
         if len(existing_segments_data) != len(segments):
             print(f"⚠️ Segment count mismatch: existing={len(existing_segments_data)}, current={len(segments)}")
-            return False, []
+            if not overwrite_segments:
+                print("🔒 Using existing segments (overwrite disabled, preserving manual edits)")
+                # Use the existing segments count as the authoritative source
+                segments.clear()
+                segments.extend([DubSegment(**seg_data) for seg_data in existing_segments_data])
+            else:
+                return False, []
         
         # Check if all audio files exist
         audio_paths = []

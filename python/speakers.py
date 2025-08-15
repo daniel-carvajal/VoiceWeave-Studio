@@ -2,13 +2,15 @@
 voice_ml = "em_alex(0.6)+im_nicola(0.8)+jm_kumo(0.7)+zm_yunjian(1)+em_santa(0.8)"  # best voice so far
 voice_mh = "em_alex(0.8)+jm_kumo(0.7)+zm_yunjian(0.7)+em_santa(0.7)+hf_beta(0.7)" # Bit higher pitch than voice_ml, pretty similar
 voice_mh_2 = "em_alex(0.1)+im_nicola(0.8)+jm_kumo(0.3)+zm_yunjian(0.5)+em_santa(0.5)+ef_dora(1)" # Nice variation, though could also use more contrast
+voice_ml2 = "em_santa(0.8)+jm_kumo(0.1)"
 voice_ms = "em_alex" # Simple
+voice_w = "ef_dora"
 
 speaker_voices = {
-    "SPEAKER_00": voice_ml,
-    "SPEAKER_02": voice_ms,
-    "SPEAKER_01": voice_mh_2,
-    "SPEAKER_03": "ef_dora",
+    "SPEAKER_00": voice_ml2,
+    "SPEAKER_01": voice_w,
+    "SPEAKER_02": voice_mh,
+    "SPEAKER_03": voice_ms,
     "SPEAKER_UNKNOWN": "em_alex"
 }
 

@@ -6,9 +6,6 @@ from speakers import speaker_voices
 def text_chunks_to_audio(segments, audio_dir, audio_paths):
     from config import config
 
-    print("🧠 Synthesizing transcript chunks via Kokoro...")
-    # audio_paths = []
-
     for idx, segment in enumerate(segments):
         print(f"🔍 DEBUG: Processing segment {idx}: '{segment.original_text[:30]}...'")
         text = segment.translated_text or segment.original_text
@@ -26,13 +23,14 @@ def text_chunks_to_audio(segments, audio_dir, audio_paths):
             result_path = synthesize_kokoro_snippet(
                 text, 
                 out_path=mp3_path, 
-                voice = speaker_voices.get(segment.speaker, config["kokoro_voice"]),
+                voice = speaker_voices.get(segment.speaker, config["kokoro_default_voice"]),
                 speed=synthesis_speed, 
                 endpoint=config["kokoro_endpoint"]
             )
             if result_path:
                 audio_paths.append(result_path)
                 segment.audio_file = result_path  # Use the actual returned path
+                print(f"Created segment with speaker '{segment.speaker}' and result_path: '{result_path}' ")
             else:
                 print(f"⚠️ Failed to synthesize segment {idx}")
                 segment.audio_file = None
